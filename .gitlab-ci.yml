@@ -1,0 +1,9 @@
+before_script:
+- apt-get update
+- python -V
+- pip install tox
+
+tests:
+    image: python:3.6-stretch
+    script:
+    - tox
