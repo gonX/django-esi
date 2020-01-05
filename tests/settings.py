@@ -6,15 +6,30 @@ This settings file contains everything needed for Alliance Auth projects to func
 It gets overwritten by the 'allianceauth update' command.
 If you wish to make changes, overload the setting in your project's settings file (local.py).
 """
+import os
 
-INSTALLED_APPS = [
-    'django',
-    'django.contrib.auth',
-    'esi',
-]
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(PROJECT_DIR)
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': str(os.path.join(BASE_DIR, 'mysite.sqlite3')),
+    },
+}
 
 SECRET_KEY = "wow I'm a really bad default secret key"
 
+INSTALLED_APPS = [
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'esi',
+]
+
+
+# esi
 ESI_SSO_CLIENT_ID = 'test-dummy'
 ESI_SSO_CLIENT_SECRET = 'test-dummy'
 ESI_SSO_CALLBACK_URL = 'http://localhost:8000'

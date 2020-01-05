@@ -16,6 +16,9 @@ try:
 except ImportError:  # py3
     from urllib import parse as urlparse
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 SPEC_CONFIG = {'use_models': False}
 
@@ -50,7 +53,7 @@ class CachingHttpFuture(HttpFuture):
         try:
             expires_dt = datetime.strptime(str(expires), '%a, %d %b %Y %H:%M:%S %Z')
             delta = expires_dt - datetime.utcnow()
-            return delta.seconds
+            return delta.total_seconds()
         except ValueError:
             return 0
 
@@ -65,7 +68,12 @@ class CachingHttpFuture(HttpFuture):
             cached = cache.get(self.cache_key)
             if cached:
                 result, response = cached
-            else:
+                expiry = self._time_to_expiry(response.headers['Expires'])
+                if expiry < 0:
+                    logger.warning(("cache expired by {0} seconds, Forcing expiry".format(expiry)))
+                    cached = False
+
+            if not cached:
                 _also_return_response = self.also_return_response  # preserve original value
                 self.also_return_response = True  # override to always get the raw response for expiry header
                 result, response = super(CachingHttpFuture, self).result(**kwargs)
