@@ -12,7 +12,7 @@ setup(
     version=__version__,
     install_requires=[
         'requests>=2.9.1,<3.0',
-        'requests_oauthlib>=0.8.0,<1.0',
+        'requests_oauthlib>=0.8.0,<2.0',
         'django>=1.10,<3.0',
         'bravado>=8.4.0,<9.3',
         'celery>=4.0.2',
