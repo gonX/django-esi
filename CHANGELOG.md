@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- unit tests for models and managers
-- fix for caching bug [#2](https://gitlab.com/allianceauth/adarnauth-esi/issues/2)
-- test framework to enable CI/CD
-- changelog
+- Unit test suite
+- Fix for caching bug [#2](https://gitlab.com/allianceauth/django-esi/issues/2)
+- Test framework to enable CI/CD
+- Change Log
 
 ### Changed
+
+- Package renamed from django-esi to django-esi [#3](https://gitlab.com/allianceauth/django-esi/issues/3)
 
 ### Fixed
 
