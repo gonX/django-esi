@@ -2,13 +2,14 @@ import os
 from setuptools import find_packages, setup
 from esi import __version__
 
-with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
-    README = readme.read()
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='adarnauth-esi',
+    name='django-esi',
     version=__version__,
     install_requires=[
         'requests>=2.9.1,<3.0',
@@ -20,27 +21,25 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     license='GNU General Public License v3 (GPLv3)',
-    description='Django app for accessing the EVE Swagger Interface.',
-    long_description=README,
-    url='https://github.com/adarnof/adarnauth-esi',
-    author='Adarnof',
+    description='Django app for accessing the EVE Swagger Interface (ESI).',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://gitlab.com/allianceauth/django-esi',
+    author='Alliance Auth',
     author_email='adarnof@gmail.com',
     classifiers=[
         'Environment :: Web Environment',
-        'Framework :: Django',
-        'Framework :: Django :: 1.10',
-        'Framework :: Django :: 1.11',
-        'Framework :: Django :: 2.0',
+        'Framework :: Django',        
+        'Framework :: Django :: 2.2',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
