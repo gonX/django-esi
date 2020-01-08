@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] - yyyy-mm-dd
+## [1.5.0] - 2020-01-08
 
 ### Added
 
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Package renamed from django-esi to django-esi [#3](https://gitlab.com/allianceauth/django-esi/issues/3)
+- Package renamed from adarnauth-esi to django-esi [#3](https://gitlab.com/allianceauth/django-esi/issues/3)
 
 ### Fixed
 
