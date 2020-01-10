@@ -1,9 +1,25 @@
-before_script:
-- apt-get update
-- python -V
-- pip install tox
+stages:
+- "test"
 
-tests:
-    image: python:3.6-stretch
-    script:
-    - tox
+before_script:
+- pip install wheel tox
+
+test-3.5:
+  image: python:3.5-stretch
+  script:  
+  - tox -e py35
+
+test-3.6:
+  image: python:3.6-stretch
+  script:  
+  - tox -e py36
+
+test-3.7:
+  image: python:3.7-buster
+  script:  
+  - tox -e py37
+
+test-3.8:
+  image: python:3.8-buster
+  script:  
+  - tox -e py38
