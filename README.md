@@ -1,6 +1,14 @@
 # django-esi
 
-Django app for accessing the EVE Swagger Interface (ESI).
+Django app for easy access to the EVE Swagger Interface (ESI)
+
+[![Chat on Discord](https://img.shields.io/discord/399006117012832262.svg)](https://discord.gg/fjnHAmk)
+[![license](https://img.shields.io/badge/license-GPLv3-green)](https://pypi.org/project/django-esi/)
+[![python](https://img.shields.io/pypi/pyversions/django-esi)](https://pypi.org/project/django-esi/)
+[![django](https://img.shields.io/pypi/djversions/django-esi)](https://pypi.org/project/django-esi/)
+[![version](https://img.shields.io/pypi/v/django-esi)](https://pypi.org/project/django-esi/)
+[![pipeline-status](https://gitlab.com/allianceauth/django-esi/badges/master/pipeline.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
+[![coverage](https://gitlab.com/allianceauth/django-esi/badges/master/coverage.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
 
 ## Contents
 
