@@ -1,8 +1,9 @@
 stages:
 - "test"
+- deploy
 
 before_script:
-- pip install wheel tox
+- pip install wheel tox twine
 
 test-3.5:
   image: python:3.5-stretch
@@ -23,3 +24,13 @@ test-3.8:
   image: python:3.8-buster
   script:  
   - tox -e py38
+
+deploy_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $PRODUCTION_USERNAME
+    TWINE_PASSWORD: $PRODUCTION_PASSWORD
+  script:
+    - twine upload dist/*
+  only:
+    - tags
