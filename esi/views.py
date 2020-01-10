@@ -19,14 +19,21 @@ def sso_redirect(request, scopes=list([]), return_to=None):
     Redirects to EVE for login.
     Accepts a view or URL name as a redirect after SSO.
     """
-    logger.debug("Initiating redirect of {0} session {1}".format(request.user, request.session.session_key[:5]))
+    logger.debug("Initiating redirect of {0} session {1}".format(
+        request.user, 
+        request.session.session_key[:5] 
+            if request.session.session_key 
+            else '[no key]'
+    ))
     if isinstance(scopes, string_types):
         scopes = list([scopes])
 
     # ensure only one callback redirect model per session
-    CallbackRedirect.objects.filter(session_key=request.session.session_key).delete()
+    if request.session.session_key:
+        CallbackRedirect.objects\
+            .filter(session_key=request.session.session_key).delete()
 
-    # ensure session installed in database
+    # ensure we have a session
     if not request.session.exists(request.session.session_key):
         logger.debug("Creating new session before redirect.")
         request.session.create()
