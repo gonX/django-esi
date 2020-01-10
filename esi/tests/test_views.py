@@ -195,7 +195,6 @@ class TestSsoCallbackView(TestCase):
     # logger.debug is calling the session key, but in this case a session
     # does not exist
 
-    """
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
     @patch(
         'esi.views.app_settings.ESI_SSO_CALLBACK_URL', 
@@ -235,8 +234,7 @@ class TestSsoCallbackView(TestCase):
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
-        middleware.process_request(request)
-        #request.session.save()
+        middleware.process_request(request)        
 
         http_response = sso_redirect(request)
 
@@ -246,13 +244,12 @@ class TestSsoCallbackView(TestCase):
         callback_redirect = callback_redirects.first()
         self.assertEqual(
             callback_redirect.url,
-            '/callback3/'
+            '/callback2/'
         )
         self.assertEqual(
             callback_redirect.session_key,
             request.session.session_key
-        )
-    """
+        )    
 
     
 class TesReceiveCallbackView(TestCase):
