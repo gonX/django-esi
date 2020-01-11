@@ -13,9 +13,6 @@ ESI_OAUTH_URL = getattr(settings, 'ESI_SSO_BASE_URL', 'https://login.eveonline.c
 # Change this to access different revisions of the ESI API by default
 ESI_API_VERSION = getattr(settings, 'ESI_API_VERSION', 'latest')
 
-# Define the base template to extend
-ESI_BASE_TEMPLATE = getattr(settings, 'ESI_BASE_TEMPLATE', 'public/base.html')
-
 # Enable to force new token creation every callback
 ESI_ALWAYS_CREATE_TOKEN = getattr(settings, 'ESI_ALWAYS_CREATE_TOKEN', False)
 
