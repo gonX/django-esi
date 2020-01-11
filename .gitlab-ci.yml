@@ -29,10 +29,6 @@ deploy_production:
   stage: deploy
   image: python:3.6-stretch
 
-  variables:
-    TWINE_USERNAME: $PRODUCTION_USERNAME
-    TWINE_PASSWORD: $PRODUCTION_PASSWORD
-
   before_script:
     - pip install twine
 
