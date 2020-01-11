@@ -1,53 +1,75 @@
-{% extends base_template %}
 {% load static %}
-{% block content %}
-<div class="col-lg-6 col-lg-offset-3">
-    <div class="panel panel-default">
-        <div class="panel-heading">Select a Token</div>
-        <div class="panel-body">
-            <table class="table">
-                <tr>
-                    <th class="text-center"></th>
-                    <th class="text-center">Character</th>
-                    <th class="text-center">Scopes</th>
-                    <th class="text-center"></th>
-                </tr>
-                {% for token in tokens %}
-                <tr>
-                    <td class="text-center">
-                        <img class="ra-avatar img-responsive"
-                             src="https://image.eveonline.com/Character/{{ token.character_id }}_32.jpg">
-                    </td>
-                    <td class="text-center">{{ token.character_name }}</td>
-                    <td class="text-center">
-                        {% for scope in token.scopes.all %}
-                            <a class="nodecoration" data-toggle="tooltip" data-placement="top"
-                               title="{{ scope.help_text }}">{{ scope.friendly_name }}</a>{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td class="text-center">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="_token" value="{{ token.pk }}">
-                            <button class="btn btn-success" type="submit" title="Select" formmethod="post">
-                                <span class="glyphicon glyphicon-arrow-right"></span>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="">
+        <meta name="author" content="">
+
+        <title>ESI Token Selection</title>
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous" />
+    </head>
+    <body class="bg-dark">
+        <div class="container-fluid mt-5">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">Select a Token</div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <th class="text-center"></th>
+                                <th class="text-center">Character</th>
+                                <th class="text-center">Scopes</th>
+                                <th class="text-center"></th>
+                            </thead>
+                            <tbody>
+                                {% for token in tokens %}
+                                <tr>
+                                    <td class="text-center">
+                                        <img class="ra-avatar img-responsive"
+                                             src="https://image.eveonline.com/Character/{{ token.character_id }}_32.jpg">
+                                    </td>
+                                    <td class="text-center">{{ token.character_name }}</td>
+                                    <td class="text-center">
+                                        {% for scope in token.scopes.all %}
+                                            <a class="nodecoration" data-toggle="tooltip" data-placement="top"
+                                               title="{{ scope.help_text }}">{{ scope.friendly_name }}</a>{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td class="text-center">
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="_token" value="{{ token.pk }}">
+                                            <button class="btn btn-success" type="submit" title="Select" formmethod="post">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="_add" value="True">
+                        <div class="text-center">
+                            <a href="#" type="submit">
+                                <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Large_Black.png'%}"
+                                       alt="Add Token">
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-    </div>
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="_add" value="True">
-        <div class="text-center">
-            <a href="#" type="submit">
-                <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Large_Black.png'%}"
-                       alt="Add Token">
-            </a>
-        </div>
-    </form>
-</div>
-{% endblock %}
+    </body>
+</html>
+

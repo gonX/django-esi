@@ -84,7 +84,6 @@ def select_token(request, scopes='', new=False):
     def _token_list(r, tokens):
         context = {
             'tokens': tokens,
-            'base_template': app_settings.ESI_BASE_TEMPLATE,
         }
         return render(r, 'esi/select_token.html', context=context)
 
