@@ -1,0 +1,50 @@
+{% extends 'esi_test_app/base.html' %}
+
+{% block details %}
+
+    <h1>Manual API test - Start</h1>
+
+    <p>
+        Welcome to esi-test-app!
+    </p>
+    <p>     
+        The purpose of this app is to allow testing of features of the django-esi app that require user interaction and can therefore not be tested with automated unit tests.<br>
+        This test will try to first acquire an ESI token for the current user and then call an ESI endpoint with that token. 
+    </p>    
+    
+    {% if request.user.is_authenticated == False %}            
+        <p>
+            For this test you need to be logged in with a staff account. Click 
+            <a href="{% url 'admin:login' %}?next={% url 'esi_test_app:index' %}">here</a>
+             to login.
+            </p>
+
+    {% else%}
+        <p>
+            You are logged in as user: <b>{{ request.user.username }}</b> 
+            <a href="{% url 'admin:logout' %}?next={% url 'esi_test_app:index' %}">[Logout]
+            </a>
+        </p>    
+
+        <p>
+            <strong>Important!</strong>
+            For this test to work esi-test-app needs to delete <u>any</u> ESI tokens of user <b>{{ request.user.username }}</b> which has the scopes mentioned below.
+            Please make sure there are no other apps running in this Django site that are using ESI tokens:
+        </p>
+        <ul>
+            {% for scope in scopes %}
+                <li><code> {{ scope }} </li></code>
+            {% endfor%}
+        </ul>
+            
+        <form method="post">
+            {% csrf_token %}
+            <input type="submit" value="Run test">
+        </form>
+
+    {% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+{% endblock extra_css %}
