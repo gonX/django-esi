@@ -25,5 +25,7 @@ def cleanup_token():
     """
     Delete expired :model:`esi.Token` models.
     """
+    logger.debug("Clearring Userless Tokens.")
+    Token.objects.filter(user__isnull=True).delete()
     logger.debug("Triggering bulk refresh of all expired tokens.")
     Token.objects.all().get_expired().bulk_refresh()

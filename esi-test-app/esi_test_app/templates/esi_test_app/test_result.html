@@ -2,8 +2,8 @@
 
 {% block details %}
 
-    <h1>Manual API test - Result</h1>
-
+    <h1>API test result: {{ test_name }}</h1>
+    
     <p>Used ESI endpoint: <code>{{ esi_endpoint }}</code></p>
 
     {% if test_success %}
@@ -16,9 +16,7 @@
         </p>Please check log file for details</p>
         
     {% endif %}
-           
-    <p><a href="{% url 'esi_test_app:prepare_api_test' %}">Re-Run test</a></p>
-
+    
     <p><a href="{% url 'esi_test_app:index' %}">Back to start page</a></p>
 
 {% endblock %}

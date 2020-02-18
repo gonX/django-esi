@@ -5,7 +5,7 @@ from django.http import HttpResponse
 
 from esi.clients import esi_client_factory
 from esi.models import Token
-from esi.decorators import token_required
+from esi.decorators import token_required, single_use_token
 
 
 # setup logger
@@ -24,27 +24,38 @@ ESI_SCOPES = ['esi-characters.read_medals.v1']
 
 def index(request):        
     """Start page with ability to login"""
-    if request.method == 'POST':        
-        return redirect('esi_test_app:prepare_api_test')    
-    else:                
-        return render(
-            request, 
-            'esi_test_app/index.html', context={'scopes': ESI_SCOPES}
-        )
+    return render(
+        request, 
+        'esi_test_app/index.html', context={'scopes': ESI_SCOPES}
+    )
 
 
-def prepare_api_test(request):
+@single_use_token(scopes=ESI_SCOPES)
+def test_single_use_token(request, token):
+    request.session['token_pk'] = token.pk
+    request.session['test_name'] = 'test 1 - single_use_token'
+    return redirect('esi_test_app:run_api_test')
+
+
+def test_token_required_1(request):
     """Preparing environment for test"""
     logger.info('--------------------------------------------')
     logger.info('starting API test with user {}'.format(request.user.username))    
     Token.objects.filter(user=request.user, scopes__name__in=ESI_SCOPES).delete()
-    return redirect('esi_test_app:run_api_test')
+    return redirect('esi_test_app:test_token_required_2')
 
 
 @token_required(scopes=ESI_SCOPES)
-def run_api_test(request, token):        
+def test_token_required_2(request, token):
+    request.session['token_pk'] = token.pk
+    request.session['test_name'] = 'test 2 - token_required'
+    return redirect('esi_test_app:run_api_test')
+
+
+def run_api_test(request):
     """Running the API test"""
     logger.info('starting ESI client')
+    token = Token.objects.get(pk=request.session['token_pk'])    
     client = esi_client_factory(token=token)
 
     try:
@@ -61,6 +72,7 @@ def run_api_test(request, token):
         error_str = str(ex)
 
     context = {
+        'test_name': request.session['test_name'],
         'test_success': test_success,
         'error_str': error_str,
         'esi_endpoint': '/characters/{character_id}/medals/'
