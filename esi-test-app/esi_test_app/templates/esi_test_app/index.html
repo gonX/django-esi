@@ -12,9 +12,16 @@
         This test will try to first acquire an ESI token for the current user and then call an ESI endpoint with that token. 
     </p>    
     
+    <p>
+            <a href="{% url 'esi_test_app:test_single_use_token' %}">
+                Run test 1 - single_use_token
+            </a>
+    </p>
+
     {% if request.user.is_authenticated == False %}            
+        
         <p>
-            For this test you need to be logged in with a staff account. Click 
+            For running test 2 you need to be logged in with a staff account. Click 
             <a href="{% url 'admin:login' %}?next={% url 'esi_test_app:index' %}">here</a>
              to login.
             </p>
@@ -28,7 +35,7 @@
 
         <p>
             <strong>Important!</strong>
-            For this test to work esi-test-app needs to delete <u>any</u> ESI tokens of user <b>{{ request.user.username }}</b> which has the scopes mentioned below.
+            For this test to work this app needs to delete <u>any</u> ESI tokens of user <b>{{ request.user.username }}</b> which has the scopes mentioned below.
             Please make sure there are no other apps running in this Django site that are using ESI tokens:
         </p>
         <ul>
@@ -37,11 +44,12 @@
             {% endfor%}
         </ul>
             
-        <form method="post">
-            {% csrf_token %}
-            <input type="submit" value="Run test">
-        </form>
-
+        <p>
+            <a href="{% url 'esi_test_app:test_token_required_1' %}">
+                Run test 2 - token_required
+            </a>
+        </p>        
+        
     {% endif %}
 
 {% endblock %}

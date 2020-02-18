@@ -127,3 +127,28 @@ def token_required(scopes='', new=False):
         return _wrapped_view
 
     return decorator
+
+def single_use_token(scopes='', new=False):
+    """
+    Decorator for views which supplies a single use token granted via sso logim regardless of login state.
+    Same parameters as tokens_required.
+    """
+
+    def decorator(view_func):
+        @wraps(view_func, assigned=available_attrs(view_func))
+        def _wrapped_view(request, *args, **kwargs):
+
+            # if we're coming back from SSO for a new token, return it
+            token = _check_callback(request)
+            if token:
+                logger.debug("Got new token from session {0}. Returning to view.".format(request.session.session_key[:5]))
+                return view_func(request, token, *args, **kwargs)
+
+            # prompt the user to login for a new token
+            logger.debug("Redirecting session {0} to SSO.".format(request.session.session_key[:5]))
+            from esi.views import sso_redirect
+            return sso_redirect(request, scopes=scopes)
+
+        return _wrapped_view
+
+    return decorator

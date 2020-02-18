@@ -122,6 +122,14 @@ class TestTasks(TestCase):
             ), 
             self.user2
         ) 
+        t_no_user_1 = _store_as_Token(
+            _generate_token(
+                character_id=1234,
+                character_name="No User",
+                scopes=['123']
+            ), 
+            None
+        ) 
 
         t_expired_1.created -= timedelta(121)
         t_expired_1.save()        
@@ -130,3 +138,7 @@ class TestTasks(TestCase):
 
         cleanup_token()
         self.assertEqual(mock_token_refresh.call_count, 2)
+        
+        all_tokens = Token.objects.all()
+        self.assertNotIn(t_no_user_1, all_tokens)
+        

@@ -11,7 +11,7 @@ from django.test import TestCase, RequestFactory
 from django.utils import timezone
 
 from . import _dt_eveformat, _generate_token, _store_as_Token, _set_logger
-from ..decorators import _check_callback, tokens_required, token_required
+from ..decorators import _check_callback, tokens_required, token_required, single_use_token
 from ..models import Token, CallbackRedirect
 
 
@@ -456,4 +456,72 @@ class TestTokenRequired(TestCase):
         self.assertEqual(
             response,
             'select_token_view_called'
+        )
+
+class TestSingleUseTokenRequired(TestCase):
+
+    def setUp(self):                
+        self.token = _store_as_Token(
+            _generate_token(
+                character_id=99,
+                character_name="No Auth Character",
+                scopes=['abc', '123']
+            ), 
+            None
+        )
+        self.factory = RequestFactory()
+        CallbackRedirect.objects.all().delete()
+    
+        
+    @patch('esi.views.sso_redirect', autospec=True)
+    def test_initial_call_wo_matching_tokens(
+        self, 
+        mock_sso_redirect
+    ):
+        logger.debug('start')
+        
+        @single_use_token(scopes='xyz')
+        def my_view(request, tokens):
+            return tokens
+
+        mock_sso_redirect.return_value = 'sso_redirect_view_called'
+
+        request = self.factory.get('https://www.example.com/my_view/')
+        request.user = None
+        middleware = SessionMiddleware()
+        middleware.process_request(request)
+        request.session.save()
+
+        response = my_view(request)
+        self.assertEqual(
+            response,
+            'sso_redirect_view_called'
+        )
+    
+
+    def test_coming_back_from_sso_normal(
+        self, 
+    ):
+        logger.debug('start')
+        
+        @single_use_token(scopes='abc', new=True)
+        def my_view(request, token):
+            return token
+
+        request = self.factory.get('https://www.example.com/my_view/')
+        request.user = None
+        middleware = SessionMiddleware()
+        middleware.process_request(request)
+        request.session.save()
+
+        CallbackRedirect.objects.create(
+            session_key=request.session.session_key,
+            state='qwe123',
+            token=self.token
+        ) 
+
+        response = my_view(request)
+        self.assertEqual(
+            response,
+            self.token
         )
