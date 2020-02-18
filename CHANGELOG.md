@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.0] - 2020-02-18
+
+### Changed
+
+- Updated Token select screen to be more mobile friendly. [!15](https://gitlab.com/allianceauth/django-esi/-/merge_requests/15)
+
+### Added
+
+- Single use token view decorator. [!16](https://gitlab.com/allianceauth/django-esi/-/merge_requests/16)
+- Test App for full development testing. [#4](https://gitlab.com/allianceauth/django-esi/issues/4)
+
 ## [1.5.2] - 2020-01-14
 
 ### Changed

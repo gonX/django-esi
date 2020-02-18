@@ -97,6 +97,16 @@ def my_view(request, tokens):
 
 This skips prompting for token selection and instead passes that responsibility to the view. Tokens are provided as a queryset.
 
+To require a single use token regardless of login state, add the `single_use_token` decorator with the scopes required:
+
+```python
+from esi.decorators import single_use_token
+
+@single_use_token(scopes=['publicData'])
+my_view(request, token):
+    # my code 
+```
+
 ## Accessing ESI
 
 django-esi provides a convenience wrapper around the [bravado SwaggerClient](https://github.com/Yelp/bravado).
