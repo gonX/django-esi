@@ -49,6 +49,7 @@ class TestCheckCallback(TestCase):
 
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='xyz',
             token=self.token
         )        
@@ -78,6 +79,7 @@ class TestCheckCallback(TestCase):
         
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='xyz'
         )
                 
@@ -152,6 +154,7 @@ class TestTokensRequired(TestCase):
         
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='xyz',
             token=self.token
         )     
@@ -200,6 +203,7 @@ class TestTokensRequired(TestCase):
         
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='xyz',
             token=self.token
         )     
@@ -329,6 +333,7 @@ class TestTokenRequired(TestCase):
 
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
         ) 
@@ -369,6 +374,7 @@ class TestTokenRequired(TestCase):
 
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
         ) 
@@ -408,6 +414,7 @@ class TestTokenRequired(TestCase):
 
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
         ) 
@@ -448,6 +455,7 @@ class TestTokenRequired(TestCase):
 
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
         ) 
@@ -516,6 +524,7 @@ class TestSingleUseTokenRequired(TestCase):
 
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
+            url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
         ) 
