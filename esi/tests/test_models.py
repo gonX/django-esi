@@ -296,17 +296,24 @@ class TestToken(TestCase):
 
 class TestCallbackRedirect(TestCase):
 
-    def setUp(self):
-        self.cb = CallbackRedirect(
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.redirect_url = 'https://www.example.com/%s/' %  ('x' * (2048 - 25))
+        cls.cb = CallbackRedirect.objects.create(
             session_key='abc',
             state='xyz',
+            url=cls.redirect_url
         )
+        cls.cb.refresh_from_db()
 
     def test_str(self):
-        self.assertEqual('abc: /', str(self.cb))
+        self.assertEqual('abc: %s' % self.redirect_url, str(self.cb))
 
     def test_repr(self):
         self.assertEqual(
-            '<CallbackRedirect(id=None): abc to />', 
+            '<CallbackRedirect(pk=%s): abc to %s>' % (
+                self.cb.pk, self.redirect_url
+            ),
             repr(self.cb)
         )
