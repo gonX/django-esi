@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.1] - 2020-04-15
+
+### Fixed
+
+- ESI does not support redirect URLs longer than 254 chars [#8](https://gitlab.com/allianceauth/django-esi/issues/8)
+
 ## [1.6.0] - 2020-02-18
 
 ### Changed
