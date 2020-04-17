@@ -1,14 +1,9 @@
 stages:
-- "test"
+- test
 - deploy
 
 before_script:
 - pip install wheel tox twine
-
-test-3.5:
-  image: python:3.5-stretch
-  script:  
-  - tox -e py35
 
 test-3.6:
   image: python:3.6-stretch

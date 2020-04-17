@@ -2,13 +2,13 @@
 
 Django app for easy access to the EVE Swagger Interface (ESI)
 
-[![Chat on Discord](https://img.shields.io/discord/399006117012832262.svg)](https://discord.gg/fjnHAmk)
-[![license](https://img.shields.io/badge/license-GPLv3-green)](https://pypi.org/project/django-esi/)
+[![version](https://img.shields.io/pypi/v/django-esi)](https://pypi.org/project/django-esi/)
 [![python](https://img.shields.io/pypi/pyversions/django-esi)](https://pypi.org/project/django-esi/)
 [![django](https://img.shields.io/pypi/djversions/django-esi)](https://pypi.org/project/django-esi/)
-[![version](https://img.shields.io/pypi/v/django-esi)](https://pypi.org/project/django-esi/)
+[![license](https://img.shields.io/badge/license-GPLv3-green)](https://pypi.org/project/django-esi/)
 [![pipeline-status](https://gitlab.com/allianceauth/django-esi/badges/master/pipeline.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
 [![coverage](https://gitlab.com/allianceauth/django-esi/badges/master/coverage.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
+[![Chat on Discord](https://img.shields.io/discord/399006117012832262.svg)](https://discord.gg/fjnHAmk)
 
 ## Contents
 
@@ -60,6 +60,24 @@ Django-esi adds the following main functionalities to a Django site:
 
 1. Run `python manage.py migrate` to create models.
 
+## Upgrade
+
+To update an existing installation please first make sure that you are in your virtual environment and in the main project folder (the one that has `manage.py`). Then run the following commands one by one:
+
+```bash
+pip install -U django-esi
+```
+
+```bash
+python manage.py migrate
+```
+
+```bash
+python manage.py collectstatic
+```
+
+Finally restart your Django application, e.g. by restarting your supervisors.
+
 ## Usage in views
 
 When views require a token, wrap with the `token_required` decorator and accept a `token` arg:
@@ -104,7 +122,7 @@ from esi.decorators import single_use_token
 
 @single_use_token(scopes=['publicData'])
 my_view(request, token):
-    # my code 
+    # my code
 ```
 
 ## Accessing ESI
@@ -139,7 +157,7 @@ Authenticated clients will auto-renew tokens when needed, or raise a `TokenExpir
 
 ### Specifying resource versions
 
-As explained on the [EVE Developers Blog](https://developers.eveonline.com/blog/article/breaking-changes-and-you), it's best practice to call a specific version of the resource and allow the ESI router to map it to the correct route, being `legacy`, `latest` or `dev`. 
+As explained on the [EVE Developers Blog](https://developers.eveonline.com/blog/article/breaking-changes-and-you), it's best practice to call a specific version of the resource and allow the ESI router to map it to the correct route, being `legacy`, `latest` or `dev`.
 
 Client initialization begins with a base swagger spec. By default this is the version defined in settings (`ESI_API_VERSION`), but can be overridden with an extra argument to the factory:
 
@@ -157,7 +175,7 @@ client = esi_client_factory(Universe='v1', Character='v3')
 client = token.get_esi_client(Universe='v1', Character='v3')
 ```
 
-A list of available resources is available on the [EVE Swagger Interface browser](https://esi.tech.ccp.is). If the resource is not available with the specified version, an `AttributeError` will be raised. 
+A list of available resources is available on the [EVE Swagger Interface browser](https://esi.tech.ccp.is). If the resource is not available with the specified version, an `AttributeError` will be raised.
 
 This version of the resource replaces the resource originally initialized. If the requested base version does not have the specified resource, it will be added.
 
@@ -177,7 +195,7 @@ For example, a swagger.json in the current file's directory would look like:
 
 ```python
 c = esi_client_factory(
-    spec_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+    spec_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),
     'swagger.json')
 )
 ```
