@@ -1,12 +1,13 @@
 import logging
 
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
 
-from esi.clients import esi_client_factory
+from esi.clients import EsiClientProvider
 from esi.models import Token
 from esi.decorators import token_required, single_use_token
 
+# create client provider
+esi = EsiClientProvider()
 
 # setup logger
 logger = logging.getLogger(__name__)
@@ -56,16 +57,19 @@ def run_api_test(request):
     """Running the API test"""
     logger.info('starting ESI client')
     token = Token.objects.get(pk=request.session['token_pk'])    
-    client = esi_client_factory(token=token)
-
+    
     try:
         logger.info('making call to ESI with token')
-        client.Character\
-            .get_characters_character_id_medals(character_id=token.character_id)\
+        esi.client.Character\
+            .get_characters_character_id_medals(
+                character_id=token.character_id,
+                token=token.valid_access_token()
+            )\
             .result()
         test_success = True
         error_str = None
         logger.info('API test succeeded')
+
     except Exception as ex:
         test_success = False        
         logger.exception('API test failed: {}'.format(ex))
@@ -77,5 +81,4 @@ def run_api_test(request):
         'error_str': error_str,
         'esi_endpoint': '/characters/{character_id}/medals/'
     }
-
     return render(request, 'esi_test_app/test_result.html', context)
