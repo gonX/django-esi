@@ -77,6 +77,14 @@ class TestToken(TestCase):
             repr(self.token)
         )
 
+    def test_get_token(self):
+        t = Token.get_token(1000, ['esi-universe.read_structures.v1'])
+        self.assertEqual(t, self.token)
+
+    def test_get_token_fail(self):
+        t = Token.get_token(1000, ['esi-universe.read_structures.v9000'])
+        self.assertEqual(t, False)
+        
     def test_need_refresh_token_for_refresh(self):
         self.assertTrue(self.token.can_refresh)        
         self.token.refresh_token = None
@@ -92,7 +100,7 @@ class TestToken(TestCase):
     @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
     def test_not_expired(self):
         self.assertFalse(self.token.expired)
-    
+
     @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
     def test_has_expired(self):
         self.token.created -= timedelta(121)
@@ -143,7 +151,40 @@ class TestToken(TestCase):
             self.token.created,
             timezone.now() - timedelta(seconds=60))
 
+    def test_valid_access_token(self):
+        self.assertFalse(self.token.expired)
+        self.assertEqual(
+            self.token.valid_access_token(),
+            'access_token'
+            )
 
+    @patch('esi.models.HTTPBasicAuth', autospec=True)
+    @patch('esi.models.OAuth2Session', autospec=True)
+    @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
+    def test_valid_access_token_refresh(self, mock_OAuth2Session, mock_HTTPBasicAuth):
+        mock_session = Mock()        
+        mock_session.refresh_token.return_value = {
+            'access_token': 'access_token_new',
+            'refresh_token': 'refresh_token_2'
+        }
+        mock_OAuth2Session.return_value = mock_session
+        
+        self.token.created -= timedelta(121)
+        self.assertTrue(self.token.expired)
+        self.assertEqual(
+            self.token.valid_access_token(),
+            'access_token_new'
+            )
+
+    @patch('esi.models.HTTPBasicAuth', autospec=True)
+    @patch('esi.models.OAuth2Session', autospec=True)
+    @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
+    def test_valid_access_token_cant_refresh(self, mock_OAuth2Session, mock_HTTPBasicAuth):
+        self.token.refresh_token = None
+        self.token.created -= timedelta(121)
+        self.assertTrue(self.token.expired)
+        with self.assertRaises(TokenExpiredError):
+            self.token.valid_access_token()
 
     def test_refresh_errors_1(self):
         mock_auth = Mock()

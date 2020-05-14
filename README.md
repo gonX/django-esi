@@ -127,33 +127,75 @@ my_view(request, token):
 
 ## Accessing ESI
 
-django-esi provides a convenience wrapper around the [bravado SwaggerClient](https://github.com/Yelp/bravado).
+django-esi provides a convenience wrapper around the [bravado SwaggerClient](https://github.com/Yelp/bravado), and a basic client provider that can be extended.
 
-### Getting a client
+The **recommended** way of using a client is to create a provider and in the provider expose a client. creating clients on the fly is slow and also can create memory leaks.
 
-To get a SwaggerClient configured for ESI, call the factory:
+For example in its most basic form;
 
+### Example `providers.py`
 ```python
-from esi.clients import esi_client_factory
+from esi.clients import EsiClientProvider
 
-client = esi_client_factory()
+esi = EsiClientProvider()
 ```
 
-### Accessing authenticated endpoints
-
-To get an authenticated SwaggerClient, add the token argument:
-
+### Using public endpoints
 ```python
-client = esi_client_factory(token=my_token)
+from . import providers
+
+# call the endpoint
+result = providers.esi.client.Status.get_status().result()
+
+# ... do stuff with the data
+print(result)
 ```
 
-Or, get the client from the specific token model instead:
-
+### Using authenticated endpoints
+Simply add the token param to the operation.
 ```python
-client = my_token.get_esi_client()
+from . import providers
+from esi.models import Token
+
+character_id = 1234
+required_scopes = ['esi-characters.read_notifications.v1']
+
+# get a token 
+token = Token.get_token(character_id, required_scopes)
+
+# call the endpoint
+notifications = providers.esi.client.Character.get_characters_character_id_notifications(
+    character_id = character_id,  # required paramater for endpoint
+    token = token.valid_access_token()  # refresh the token if required and auth the endpoint
+    ).result()
+
+# ... do stuff with the data
 ```
 
-Authenticated clients will auto-renew tokens when needed, or raise a `TokenExpiredError` if they aren't renewable.
+### Getting all pages of an endpoint
+`djagno-esi` has a convenient wrapper that will fetch all the pages of data from an ESI endpoint are return it as if it was a single page.
+
+One caveat being that you will only get the last pages response if you ask for response with the result data.
+
+```python
+from . import providers
+from esi.models import Token
+
+character_id = 1234
+corporation_id = 5678
+required_scopes = ['esi-assets.read_corporation_assets.v1']
+
+# get a token 
+token = Token.get_token(character_id, required_scopes)
+
+# call the endpoint
+assets = providers.esi.client.Assets.get_corporations_corporation_id_assets(
+    corporation_id=corporation_id,
+    token=token.valid_access_token()
+    ).result_all_pages()
+
+# ... do stuff with the data
+```
 
 ### Specifying resource versions
 
@@ -163,7 +205,6 @@ Client initialization begins with a base swagger spec. By default this is the ve
 
 ```python
 client = esi_client_factory(version='v4')
-client = token.get_esi_client(version='v4')
 ```
 
 Only resources with the specified version number will be available. For instance, if you specify `v4` but `Universe` does not have a `v4` version, it will not be available to that specific client. Only `legacy`, `latest` and `dev` are guaranteed to have all resources available.
@@ -172,7 +213,6 @@ Individual resources are versioned and can be accessed by passing additional arg
 
 ```python
 client = esi_client_factory(Universe='v1', Character='v3')
-client = token.get_esi_client(Universe='v1', Character='v3')
 ```
 
 A list of available resources is available on the [EVE Swagger Interface browser](https://esi.tech.ccp.is). If the resource is not available with the specified version, an `AttributeError` will be raised.
@@ -180,37 +220,6 @@ A list of available resources is available on the [EVE Swagger Interface browser
 This version of the resource replaces the resource originally initialized. If the requested base version does not have the specified resource, it will be added.
 
 Note that only one old revision of each resource is kept available through the legacy route. Keep an eye on the [deployment timeline](https://github.com/ccpgames/esi-issues/projects/2/) for resource updates.
-
-### Using a local spec file
-
-Specifying resource versions introduces one major problem for shared code: not all resources nor all their operations are available on any given version. This can be addressed by shipping a copy of the [versioned latest spec](https://esi.tech.ccp.is/_latest/swagger.json) with your app. **This is the preferred method for deployment.**
-
-To build a client using this local spec, pass an additional kwarg `spec_file` which contains the path to your local swagger.json:
-
-```python
-c = esi_client_factory(spec_file='/path/to/swagger.json')
-```
-
-For example, a swagger.json in the current file's directory would look like:
-
-```python
-c = esi_client_factory(
-    spec_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-    'swagger.json')
-)
-```
-
-If a `spec_file` is specified all other versioning is unavailable: ensure you ship a spec with resource versions your app can handle.
-
-### Accessing alternate data sources
-
-ESI data source can also be specified during client creation:
-
-```python
-client = esi_client_factory(datasource='tranquility')
-```
-
-Available data sources are `tranquility` and `singularity`.
 
 ## Cleaning the database
 
@@ -239,14 +248,81 @@ CELERYBEAT_SCHEDULE = {
 
 Recommended intervals are four hours for callback redirect cleanup and daily for token cleanup (token cleanup can get quite slow with a large database, so adjust as needed). If your app does not require background token validation, it may be advantageous to not schedule the token cleanup task, instead relying on the validation check when using `@token_required` decorators or adding `.require_valid()` to the end of a query.
 
-## Operating on singularity
+## Advanced Use
 
-By default, django-esi process all operations on the tranquility cluster. To operate on singularity instead, two settings need to be changed:
+### Using a local spec file
 
-- `ESI_OAUTH_URL` should be set to `https://sisilogin.testeveonline.com/oauth`
-- `ESI_API_DATASOURCE` should be set to `singularity`
-  
-Note that tokens cannot be transferred between servers. Any tokens in the database before switching to singularity will be deleted next refresh.
+Specifying resource versions introduces one major problem for shared code: not all resources nor all their operations are available on any given version. This can be addressed by shipping a copy of the [versioned latest spec](https://esi.tech.ccp.is/_latest/swagger.json) with your app. **This is the preferred method for deployment.**
+
+To build a client using this local spec, pass an additional kwarg `spec_file` which contains the path to your local swagger.json:
+
+```python
+c = esi_client_factory(spec_file='/path/to/swagger.json')
+```
+
+For example, a swagger.json in the current file's directory would look like:
+
+```python
+c = esi_client_factory(
+    spec_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+    'swagger.json')
+)
+```
+
+If a `spec_file` is specified all other versioning is unavailable: ensure you ship a spec with resource versions your app can handle.
+
+### Example `providers.py` with a spec file.
+
+You can also use a spec file with the included `BaseEsiResponseClient` class to create a provider class with a local spec file.
+
+```python
+import os
+from esi.providers import BaseEsiResponseClient
+
+SWAGGER_SPEC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'swagger.json')
+
+esi = BaseEsiResponseClient(spec_file=SWAGGER_SPEC)
+```
+
+### Getting Response Data
+Simply set the `request_config.also_return_response` to `True` and then call the endpoint. This works int eh same way for both `.result()` and `.result_all_pages()`
+
+```python
+from . import providers
+from esi.models import Token
+
+character_id = 1234
+required_scopes = ['esi-characters.read_notifications.v1']
+
+# get a token 
+token = Token.get_token(character_id, required_scopes)
+
+# call the endpoint but don't request data.
+operation = providers.esi.client.Character.get_characters_character_id_notifications(
+    character_id = character_id,  # required paramater for endpoint
+    token = token.valid_access_token()  # refresh the token if required and auth the endpoint
+    )
+
+# set to get the response as well
+operation.request_config.also_return_response = True
+
+# get your data
+notifications, response = operation.result()
+
+# ... do stuff with the data
+print(response.headers['Expires'])
+
+```
+
+### Accessing alternate data sources
+
+ESI data source can also be specified during client creation:
+
+```python
+client = esi_client_factory(datasource='tranquility')
+```
+
+Currently the only available data source is `tranquility`. The `singularity` was shutdown by CCP.
 
 ## History of this app
 

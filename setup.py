@@ -16,7 +16,7 @@ setup(
         'requests>=2.9.1,<3.0',
         'requests_oauthlib>=0.8.0,<2.0',
         'django>=1.10,<3.0',
-        'bravado>=8.4.0,<9.3',
+        'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
     ],
     packages=find_packages(),
