@@ -11,8 +11,10 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name='esi-test-app',
     version=__version__,
+    python_requires='~=3.6',
     install_requires=[
-        'django-esi',        
+        'django>=1.10,<3.0',
+        'django-esi',
     ],
     packages=find_packages(),
     include_package_data=True,
@@ -31,8 +33,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3',        
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
