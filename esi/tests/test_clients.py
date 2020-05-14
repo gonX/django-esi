@@ -5,9 +5,13 @@ from unittest.mock import patch, Mock
 
 import bravado
 from bravado_core.spec import Spec
+from bravado_core.response import IncomingResponse
+from bravado.exception import HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable, HTTPErrorType
 from bravado.requests_client import RequestsClient
 from bravado.swagger_model import Loader
 import requests
+from requests.exceptions import ConnectionError, HTTPError
+from jsonschema.exceptions import RefResolutionError
 
 import django
 from django.contrib.auth.models import User
@@ -17,8 +21,9 @@ from django.utils import timezone
 
 from . import _generate_token, _store_as_Token, _set_logger
 from ..clients import *
+from ..clients import MAX_RETRIES
 from ..errors import TokenExpiredError
-
+from ..clients import EsiClientProvider
 
 SWAGGER_SPEC_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 
@@ -391,3 +396,88 @@ class TestEsiClientFactory(TestCase):
             result.return_value.json.return_value = self.test_spec_dict
         client = esi_client_factory(Status='v1')
         self.assertIsInstance(client, SwaggerClient)
+
+    def test__time_to_expiry_failure(self):
+        seconds = CachingHttpFuture._time_to_expiry("fail")
+        self.assertEqual(seconds, 0)
+
+
+class TestClientResults(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.c = esi_client_factory()
+
+    @patch.object(bravado.http_future.HttpFuture, 'result')
+    def test_retry(self, request_hit):
+        request_hit.side_effect = ConnectionError()
+        try:
+            self.c.Status.get_status().result()
+        except ConnectionError as e:
+            self.assertIsInstance(e, ConnectionError)  #  requests error thrown
+            self.assertEqual(request_hit.call_count, MAX_RETRIES)  #  we tried # times before raising
+    
+    @patch.object(bravado.http_future.HttpFuture, 'result')
+    def test_pages(self, request_hit):
+        class MockResultHeaders:
+            def __init__(self):
+                self.headers = {'X-Pages':10}
+
+        request_hit.return_value = ({"contract_test":1},MockResultHeaders())
+        self.c.Contracts.get_contracts_public_region_id(region_id=1).result_all_pages()
+        self.assertEqual(request_hit.call_count, 10)  #  we got 10 pages of data
+
+    @patch.object(bravado.http_future.HttpFuture, 'result')
+    def test_pages_response(self, request_hit):
+        class MockResultHeaders:
+            def __init__(self):
+                self.headers = {'X-Pages':10}
+
+        request_hit.return_value = ({"contract_test":1},MockResultHeaders())
+        o = self.c.Contracts.get_contracts_public_region_id(region_id=1)
+        o.request_config.also_return_response = True
+        result, response = o.result_all_pages()
+        self.assertEqual(request_hit.call_count, 10)  #  we got 10 pages of data
+        self.assertEqual(len(result), 10)  #  we got 10 lots of data
+        self.assertEqual(response.headers, {'X-Pages':10})  #  we got header of data
+
+    @patch.object(bravado.http_future.HttpFuture, 'result')
+    def test_pages_on_non_paged_endpoint(self, request_hit):
+        class MockResultHeaders:
+            def __init__(self):
+                self.headers = {'header_test':"ok"}
+
+        request_hit.return_value = ({"status_test":1},MockResultHeaders())
+
+        self.c.Status.get_status().result_all_pages()
+        self.assertEqual(request_hit.call_count, 1)  #  we got no pages of data
+
+
+class TestBaseEsiResponseClient(TestCase):
+    @patch('django.conf.settings.DEBUG', True)
+    @patch('esi.clients.esi_client_factory')
+    def test_client_loads_on_demand(
+        self, mock_esi_client_factory
+    ):
+        mock_esi_client_factory.return_value = 'my_client'
+        my_provider = EsiClientProvider()
+        self.assertFalse(mock_esi_client_factory.called)
+        self.assertIsNone(my_provider._client)
+        my_client = my_provider.client
+        self.assertTrue(mock_esi_client_factory.called)
+        self.assertIsNotNone(my_provider._client)
+        self.assertEqual(my_client, 'my_client')
+        
+
+    @patch('esi.clients.esi_client_factory')
+    def test_str(self, mock_esi_client_factory):        
+        my_provider = EsiClientProvider()
+        self.assertEqual(str(my_provider), 'EsiClientProvider')
+
+    @patch('esi.clients.esi_client_factory')
+    def test_with_spec_file(self, mock_esi_client_factory):
+        my_provider = EsiClientProvider(spec_file=SWAGGER_SPEC_PATH)
+        my_client = my_provider.client()
+        self.assertTrue(mock_esi_client_factory.called)
+        self.assertIsNotNone(my_provider._swagger_spec_file)
+        self.assertIsNotNone(my_provider._client)

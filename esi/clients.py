@@ -1,14 +1,20 @@
 from __future__ import unicode_literals
-from bravado.client import SwaggerClient, CONFIG_DEFAULTS
+from bravado.client import SwaggerClient
 from bravado import requests_client
+from bravado.exception import HTTPError, HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
 from bravado.swagger_model import Loader
 from bravado.http_future import HttpFuture
-from bravado_core.spec import Spec
+from bravado_core.spec import Spec, CONFIG_DEFAULTS
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from esi.errors import TokenExpiredError
 from esi import app_settings
 from django.core.cache import cache
 from datetime import datetime
 from hashlib import md5
+from requests.adapters import HTTPAdapter
+from requests.exceptions import ConnectionError
+from jsonschema.exceptions import RefResolutionError
+
 import json
 
 try:
@@ -22,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 SPEC_CONFIG = {'use_models': False}
 
+MAX_RETRIES = 3
 
 class CachingHttpFuture(HttpFuture):
     """
@@ -57,6 +64,36 @@ class CachingHttpFuture(HttpFuture):
         except ValueError:
             return 0
 
+    def result_all_pages(self, **kwargs):
+        """
+            Return all pages of data if pages are available in the operation, otherwise return as normal
+        """
+        results = []
+        headers = None
+        _also_return_response = self.request_config.also_return_response  # preserve original value
+        self.request_config.also_return_response = True  # override to always get the raw response for expiry header
+        
+        if "page" in self.operation.params: # check if the operation suports paging
+            current_page = 1
+            total_pages = 1
+           
+            while current_page <= total_pages:  # loop all pages and add data to output array
+                self.future.request.params["page"] = current_page
+                self.cache_key = self._build_cache_key(self.future.request)
+                result, headers = self.result()  # will use cache if applicable
+                total_pages = int(headers.headers['X-Pages'])  # total pages
+                results += result  # append to results list to be seamless to the client
+                current_page += 1
+        else:  # it doesn't so just return
+            results, headers = self.result()
+
+        self.request_config.also_return_response = _also_return_response  # restore original value
+
+        if self.request_config.also_return_response:  # obey the output 
+            return results, headers
+        else:
+            return results
+
     def result(self, **kwargs):
         if app_settings.ESI_CACHE_RESPONSE and self.future.request.method == 'GET' and self.operation is not None:
             """
@@ -74,17 +111,28 @@ class CachingHttpFuture(HttpFuture):
                     cached = False
 
             if not cached:
-                _also_return_response = self.also_return_response  # preserve original value
-                self.also_return_response = True  # override to always get the raw response for expiry header
-                result, response = super(CachingHttpFuture, self).result(**kwargs)
-                self.also_return_response = _also_return_response  # restore original value
+                _also_return_response = self.request_config.also_return_response  # preserve original value
+                self.request_config.also_return_response = True  # override to always get the raw response for expiry header
+                retries = 1
+                while retries <= MAX_RETRIES:
+                    try:
+                        result, response = super(CachingHttpFuture, self).result(**kwargs)
+                        break
+                    except (HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable, ConnectionError) as e:
+                        if retries < MAX_RETRIES:
+                            logger.warning("ESI error (Retry: {1}/{0})".format(MAX_RETRIES, retries))
+                            retries += 1
+                        else:
+                            raise e
+
+                self.request_config.also_return_response = _also_return_response  # restore original value
 
                 if 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
                     if expires > 0:
                         cache.set(self.cache_key, (result, response), expires)
 
-            if self.also_return_response:
+            if self.request_config.also_return_response:
                 return result, response
             else:
                 return result
@@ -155,7 +203,6 @@ def get_spec(name, http_client=None, config=None):
     :return: :class:`bravado_core.spec.Spec`
     """
     http_client = http_client or requests_client.RequestsClient()
-
     def load_spec():
         loader = Loader(http_client)
         return loader.load_spec(build_spec_url(name))
@@ -214,9 +261,11 @@ def esi_client_factory(token=None, datasource=None, spec_file=None, version=None
     """
 
     client = requests_client.RequestsClient()
+
     if token or datasource:
         client.authenticator = TokenAuthenticator(token=token, datasource=datasource)
 
+    
     api_version = version or app_settings.ESI_API_VERSION
 
     if spec_file:
@@ -253,3 +302,19 @@ def minimize_spec(spec_dict, operations=None, resources=None):
                 minimized['paths'][path_name][method] = data
 
     return minimized
+
+
+class EsiClientProvider:
+    _client = None
+    _swagger_spec_file = None
+    def __init__(self, spec_file=None):
+        self._swagger_spec_file = spec_file
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = esi_client_factory(spec_file=self._swagger_spec_file)  # latest, from web
+        return self._client
+
+    def __str__(self):
+        return 'EsiClientProvider'

@@ -98,6 +98,18 @@ class Token(models.Model):
         """
         return self.expires < timezone.now()
 
+    def valid_access_token(self):
+        """
+        Refresh token and return `access_token` for an authed ESI call
+        :return: access_token
+        """
+        if self.expired:
+            if self.can_refresh:
+                self.refresh()
+            else:
+                raise TokenExpiredError()
+        return self.access_token
+
     def refresh(self, session=None, auth=None):
         """
         Refreshes the token.
@@ -161,6 +173,19 @@ class Token(models.Model):
         if commit:
             self.save()
 
+    @classmethod
+    def get_token(cls, character_id, scopes):
+        """
+        Helper method to get a token for a specific character with specific scopes
+        :param character_id: Character to filter on.
+        :param scopes: array of ESI scope strings to search for.
+        :return: :class:'esi.models.Token or False
+        """
+        token = Token.objects.filter(character_id=character_id).require_scopes(scopes).first()
+        if token:
+            return token
+        else:
+            return False
 
 @python_2_unicode_compatible
 class CallbackRedirect(models.Model):
@@ -201,3 +226,4 @@ class CallbackRedirect(models.Model):
             self.__class__.__name__, self.pk, 
             self.session_key, self.url
         )
+
