@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.apps import AppConfig
 
 
@@ -9,4 +7,4 @@ class EsiConfig(AppConfig):
 
     def ready(self):
         super(EsiConfig, self).ready()
-        from esi import checks
+        from esi import checks  # noqa

@@ -1,7 +1,7 @@
 """unit tests for esi checks"""
 
 import logging
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from django.test import TestCase
 
@@ -57,4 +57,3 @@ class TestCheckSsoApplicationSettings(TestCase):
     def test_settings_incomplete_non_debug_mode(self):
         errors = check_sso_application_settings()
         self.assertEqual(len(errors), 1)
-

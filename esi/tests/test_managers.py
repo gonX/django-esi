@@ -5,11 +5,10 @@ from unittest.mock import patch, Mock
 from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import TestCase, RequestFactory
-from django.utils import timezone
 
-from . import _dt_eveformat, _generate_token, _store_as_Token, _set_logger
+from . import _generate_token, _store_as_Token, _set_logger
 from ..errors import TokenError, IncompleteResponseError
-from ..managers import _process_scopes, TokenQueryset, TokenManager
+from ..managers import _process_scopes
 from ..models import Token
    
 
@@ -20,14 +19,12 @@ class TestProcessScopes(TestCase):
 
     def test_none(self):
         self.assertSetEqual(
-            _process_scopes(None),
-            set()
+            _process_scopes(None), set()
         )
 
     def test_empty_list(self):
         self.assertSetEqual(
-            _process_scopes([]),
-            set()
+            _process_scopes([]), set()
         )
 
     def test_single_string_1(self):
@@ -70,10 +67,9 @@ class TestTokenQuerySet(TestCase):
         )
         Token.objects.all().delete()
 
-
     @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
     def test_get_expired(self):        
-        t1 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=101,
                 character_name=self.user1.username,
@@ -89,17 +85,11 @@ class TestTokenQuerySet(TestCase):
             ), 
             self.user2
         )        
-        self.assertEqual(list(
-            Token.objects.get_queryset().get_expired()), 
-            []
-        )
+        self.assertEqual(list(Token.objects.get_queryset().get_expired()), [])
         
         t2.created -= timedelta(121)
         t2.save()        
-        self.assertEqual(list(Token.objects.get_queryset().get_expired()),
-            [t2]
-        )
-
+        self.assertEqual(list(Token.objects.get_queryset().get_expired()), [t2])
 
     @patch('esi.managers.app_settings.ESI_SSO_CLIENT_ID', 'abc')
     @patch('esi.managers.app_settings.ESI_SSO_CLIENT_SECRET', 'xyz')    
@@ -145,7 +135,6 @@ class TestTokenQuerySet(TestCase):
         # this filter can never find anything, because refresh_token 
         # can not be null:
         #   self.filter(refresh_token__isnull=True).get_expired().delete()
-
 
     @patch('esi.managers.app_settings.ESI_SSO_CLIENT_ID', 'abc')
     @patch('esi.managers.app_settings.ESI_SSO_CLIENT_SECRET', 'xyz')    
@@ -205,7 +194,7 @@ class TestTokenQuerySet(TestCase):
         
         character_id = 99
         character_name = 'Bruce Wayne'
-        t1 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -213,7 +202,7 @@ class TestTokenQuerySet(TestCase):
             ), 
             self.user1
         )
-        t2 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -258,8 +247,7 @@ class TestTokenQuerySet(TestCase):
         self.assertSetEqual(
             set(Token.objects.get_queryset().require_valid()),
             {t1, t2}
-        )        
-        
+        )         
 
     @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
     @patch('esi.managers.TokenQueryset.bulk_refresh', autospec=True)    
@@ -356,30 +344,25 @@ class TestTokenQuerySet(TestCase):
             self.user1
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes('abc')),
-        	{t1, t2, t3}
+            set(Token.objects.get_queryset().require_scopes('abc')), {t1, t2, t3}
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes('xyz')),
-        	{t1, t2}
+            set(Token.objects.get_queryset().require_scopes('xyz')), {t1, t2}
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes('123')),
-        	{t1, t3}
+            set(Token.objects.get_queryset().require_scopes('123')), {t1, t3}
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes('555')),
-        	set()
+            set(Token.objects.get_queryset().require_scopes('555')), set()
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes('abc xyz 123')),
-        	{t1}
+            set(Token.objects.get_queryset().require_scopes('abc xyz 123')), {t1}
         )
 
     def test_require_scopes_empty(self):
         character_id = 99
         character_name = 'Bruce Wayne'
-        t1 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -395,7 +378,7 @@ class TestTokenQuerySet(TestCase):
             self.user1
         )
         t2.scopes.all().delete()
-        t3 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -403,15 +386,12 @@ class TestTokenQuerySet(TestCase):
             ), 
             self.user1
         )
-        self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes('')),
-        	{t2}
-        )        
+        self.assertSetEqual(set(Token.objects.get_queryset().require_scopes('')), {t2})        
 
     def test_require_scopes_exact(self):
         character_id = 99
         character_name = 'Bruce Wayne'
-        t1 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -444,22 +424,19 @@ class TestTokenQuerySet(TestCase):
             self.user1
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes_exact('abc')),
-        	set()
+            set(Token.objects.get_queryset().require_scopes_exact('abc')), set()
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes_exact('abc xyz')),
-        	{t2}
+            set(Token.objects.get_queryset().require_scopes_exact('abc xyz')), {t2}
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().require_scopes_exact('abc 123')),
-        	{t3, t4}
+            set(Token.objects.get_queryset().require_scopes_exact('abc 123')), {t3, t4}
         )
 
-    def test_require_scopes_exact(self):
+    def test_require_scopes_exact_2(self):
         character_id = 99
         character_name = 'Bruce Wayne'
-        t1 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -467,7 +444,7 @@ class TestTokenQuerySet(TestCase):
             ), 
             self.user1
         )
-        t2 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -492,8 +469,7 @@ class TestTokenQuerySet(TestCase):
             self.user1
         )
         self.assertSetEqual(
-            set(Token.objects.get_queryset().equivalent_to(t3)),
-        	{t4}
+            set(Token.objects.get_queryset().equivalent_to(t3)), {t4}
         )        
        
 
@@ -508,7 +484,6 @@ class TestTokenManager(TestCase):
             'password'
         )
 
-    
     @patch('esi.managers.app_settings.ESI_SSO_CLIENT_ID', 'abc')
     @patch('esi.managers.app_settings.ESI_SSO_CLIENT_SECRET', 'xyz')
     @patch('esi.managers.app_settings.ESI_SSO_CALLBACK_URL', 'localhost')
@@ -551,7 +526,6 @@ class TestTokenManager(TestCase):
         token2 = Token.objects.create_from_code('11abc123xyz')
         self.assertEqual(token1, token2)
 
-
     @patch('esi.managers.TokenManager.create_from_code', autospec=True)
     def test_create_from_request(self, mock_create_from_code):
         mock_create_from_code.return_value = 'we got you'
@@ -566,6 +540,3 @@ class TestTokenManager(TestCase):
         x = Token.objects.create_from_request(request)
         self.assertEqual(x, 'we got you')
         self.assertEqual(mock_create_from_code.call_args[0][1], 'abc123')
-
-
-        

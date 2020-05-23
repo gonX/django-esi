@@ -6,12 +6,12 @@ from unittest.mock import patch, Mock
 from django.contrib.auth.models import User
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.test import TestCase, RequestFactory
-from django.utils import timezone
 
-from . import _dt_eveformat, _generate_token, _store_as_Token, _set_logger
-from ..decorators import _check_callback, tokens_required, token_required, single_use_token
+from . import _generate_token, _store_as_Token, _set_logger
+from ..decorators import (
+    _check_callback, tokens_required, token_required, single_use_token
+)
 from ..models import Token, CallbackRedirect
 
 
@@ -37,7 +37,6 @@ class TestCheckCallback(TestCase):
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-    
 
     def test_normal(self): 
         logger.debug('start')       
@@ -56,7 +55,6 @@ class TestCheckCallback(TestCase):
         response = _check_callback(request)
         self.assertEqual(response, self.token)
 
-
     def test_no_cb(self):
         logger.debug('start')        
         request = self.factory.get('https://www.example.com/callback2/')
@@ -67,7 +65,6 @@ class TestCheckCallback(TestCase):
                 
         response = _check_callback(request)
         self.assertIsNone(response)
-
 
     def test_no_token(self):
         logger.debug('start')        
@@ -85,7 +82,6 @@ class TestCheckCallback(TestCase):
                 
         response = _check_callback(request)
         self.assertIsNone(response)
-
 
     def test_no_session(self):
         logger.debug('start')        
@@ -117,8 +113,7 @@ class TestTokensRequired(TestCase):
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-    
-        
+     
     def test_token_already_exists(self):
         logger.debug('start')
         
@@ -137,7 +132,6 @@ class TestTokensRequired(TestCase):
             response.first(),
             self.token
         )
-
 
     def test_token_and_cb_already_exists(self):        
         logger.debug('start')
@@ -187,7 +181,6 @@ class TestTokensRequired(TestCase):
             'sso_redirect_view_called'
         )
 
-
     def test_coming_back_from_sso(self):
         logger.debug('start')
         
@@ -214,7 +207,6 @@ class TestTokensRequired(TestCase):
             self.token
         )
     
-
     def test_user_not_authed(self):
         logger.debug('start')
         
@@ -258,7 +250,6 @@ class TestTokenRequired(TestCase):
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
     
-        
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
     def test_initial_call_with_matching_tokens(
@@ -314,7 +305,6 @@ class TestTokenRequired(TestCase):
             response,
             'sso_redirect_view_called'
         )
-    
 
     def test_coming_back_from_sso_normal(
         self, 
@@ -343,7 +333,6 @@ class TestTokenRequired(TestCase):
             response,
             self.token
         )
-
 
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
@@ -466,6 +455,7 @@ class TestTokenRequired(TestCase):
             'select_token_view_called'
         )
 
+
 class TestSingleUseTokenRequired(TestCase):
 
     def setUp(self):                
@@ -480,7 +470,6 @@ class TestSingleUseTokenRequired(TestCase):
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
     
-        
     @patch('esi.views.sso_redirect', autospec=True)
     def test_initial_call_wo_matching_tokens(
         self, 
@@ -506,7 +495,6 @@ class TestSingleUseTokenRequired(TestCase):
             'sso_redirect_view_called'
         )
     
-
     def test_coming_back_from_sso_normal(
         self, 
     ):

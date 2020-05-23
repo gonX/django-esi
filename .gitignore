@@ -90,3 +90,8 @@ ENV/
 
 # PyCharm
 .idea/
+
+# other
+Makefile
+.pylintrc
+.flake8

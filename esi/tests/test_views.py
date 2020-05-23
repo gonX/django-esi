@@ -1,8 +1,5 @@
-from datetime import timedelta
 import logging
-from unittest.mock import patch, Mock
-
-from requests_oauthlib import OAuth2Session
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -10,8 +7,7 @@ from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.test import TestCase, RequestFactory
 
 from . import _generate_token, _store_as_Token, _set_logger
-from ..clients import *
-from ..models import CallbackRedirect, Token
+from ..models import CallbackRedirect
 from ..views import sso_redirect, receive_callback, select_token
 
 
@@ -21,7 +17,7 @@ ESI_SSO_CLIENT_ID = 'abc'
 ESI_SSO_CALLBACK_URL = 'https://www.example.com/callback/'
 ESI_OAUTH_LOGIN_URL = 'https://www.example.com/oauth/'
 
-redirect_sub_url = '/%s/' %  ('x' * (2048 - 25))
+redirect_sub_url = '/%s/' % ('x' * (2048 - 25))
 redirect_url = 'https://www.example.com' + redirect_sub_url
 
 
@@ -45,7 +41,6 @@ class TestSsoCallbackView(TestCase):
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
         
-
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
     @patch(
         'esi.views.app_settings.ESI_SSO_CALLBACK_URL', 
@@ -91,7 +86,6 @@ class TestSsoCallbackView(TestCase):
             state
         )
 
-
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
     @patch(
         'esi.views.app_settings.ESI_SSO_CALLBACK_URL', 
@@ -136,7 +130,6 @@ class TestSsoCallbackView(TestCase):
             callback_redirect.state,
             state
         )
-
 
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
     @patch(
@@ -190,7 +183,6 @@ class TestSsoCallbackView(TestCase):
             state
         )
 
-
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
     @patch(
         'esi.views.app_settings.ESI_SSO_CALLBACK_URL', 
@@ -206,7 +198,7 @@ class TestSsoCallbackView(TestCase):
         middleware.process_request(request)
         request.session.save()
 
-        http_response = sso_redirect(request, return_to='callback3')
+        sso_redirect(request, return_to='callback3')
 
         callback_redirects = CallbackRedirect.objects\
             .filter(session_key=request.session.session_key)
@@ -232,7 +224,7 @@ class TestSsoCallbackView(TestCase):
         middleware = SessionMiddleware()
         middleware.process_request(request)        
 
-        http_response = sso_redirect(request)
+        sso_redirect(request)
 
         callback_redirects = CallbackRedirect.objects\
             .filter(session_key=request.session.session_key)
@@ -289,7 +281,6 @@ class TesReceiveCallbackView(TestCase):
         self.assertEqual(http_response.url, redirect_url)
         self.assertEqual(callback_redirect.token, self.token)
 
-    
     def test_missing_code(self):            
         request = self.factory.get('https://www.example.com?state=123')
         request.user = self.user
@@ -300,7 +291,6 @@ class TesReceiveCallbackView(TestCase):
         http_response = receive_callback(request)
         self.assertIsInstance(http_response, HttpResponseBadRequest)
         
-
     def test_missing_state(self):            
         request = self.factory.get('https://www.example.com?code=abc')
         request.user = self.user
@@ -311,7 +301,6 @@ class TesReceiveCallbackView(TestCase):
         http_response = receive_callback(request)
         self.assertIsInstance(http_response, HttpResponseBadRequest)
         
-    
     def test_missing_callback(self):            
         request = self.factory.get('https://www.example.com?code=abc&state=123')
         request.user = self.user
@@ -342,7 +331,6 @@ class TestSelectTokenView(TestCase):
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-
 
     @patch('esi.views.render', autospec=True)
     def test_first_call(self, mock_render):

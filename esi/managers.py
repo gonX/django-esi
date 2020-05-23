@@ -1,13 +1,16 @@
-from __future__ import unicode_literals
-from django.db import models
-from requests_oauthlib import OAuth2Session
-from esi import app_settings
-import requests
-from django.utils import timezone
 from datetime import timedelta
-from django.utils.six import string_types
-from esi.errors import TokenError, IncompleteResponseError
 import logging
+
+import requests
+from requests_oauthlib import OAuth2Session
+
+from django.db import models
+from django.utils import timezone
+from django.utils.six import string_types
+
+from .errors import TokenError, IncompleteResponseError
+from . import app_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +51,9 @@ class TokenQueryset(models.QuerySet):
         for model in self.filter(refresh_token__isnull=False):
             try:
                 model.refresh(session=session, auth=auth)
-                logging.debug("Successfully refreshed {0}".format(repr(model)))
+                logging.debug("Successfully refreshed %r", model)
             except TokenError:
-                logger.info("Refresh failed for {0}. Deleting.".format(repr(model)))
+                logger.info("Refresh failed for %r. Deleting.", model)
                 model.delete()
             except IncompleteResponseError:
                 incomplete.append(model.pk)
@@ -129,7 +132,7 @@ class TokenManager(models.Manager):
         """
 
         # perform code exchange
-        logger.debug("Creating new token from code {0}".format(code[:-5]))
+        logger.debug("Creating new token from code %s", code[:-5])
         oauth = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID, redirect_uri=app_settings.ESI_SSO_CALLBACK_URL)
         token = oauth.fetch_token(app_settings.ESI_TOKEN_URL, client_secret=app_settings.ESI_SSO_CLIENT_SECRET,
                                   code=code)
@@ -165,7 +168,7 @@ class TokenManager(models.Manager):
                         help_text = s.replace('_', ' ').capitalize()
                     scope = Scope.objects.create(name=s, help_text=help_text)
                     model.scopes.add(scope)
-            logger.debug("Added {0} scopes to new token.".format(model.scopes.all().count()))
+            logger.debug("Added %d scopes to new token.", model.scopes.all().count())
 
         if not app_settings.ESI_ALWAYS_CREATE_TOKEN:
             # see if we already have a token for this character and scope combination
@@ -173,19 +176,23 @@ class TokenManager(models.Manager):
             queryset = self.get_queryset().equivalent_to(model)
             if queryset.exists():
                 logger.debug(
-                    "Identified {0} tokens equivalent to new token. Updating access and refresh tokens.".format(
-                        queryset.count()))
+                    "Identified %d tokens equivalent to new token. "
+                    "Updating access and refresh tokens.",
+                    queryset.count()
+                )
                 queryset.update(
                     access_token=model.access_token,
                     refresh_token=model.refresh_token,
                     created=model.created,
                 )
                 if queryset.filter(user=model.user).exists():
-                    logger.debug("Equivalent token with same user exists. Deleting new token.")
+                    logger.debug(
+                        "Equivalent token with same user exists. Deleting new token."
+                    )
                     model.delete()
                     model = queryset.filter(user=model.user)[0]  # pick one at random
 
-        logger.debug("Successfully created {0} for user {1}".format(repr(model), user))
+        logger.debug("Successfully created %r for user %s", model, user)
         return model
 
     def create_from_request(self, request):
@@ -194,7 +201,11 @@ class TokenManager(models.Manager):
         :param request: OAuth callback request.
         :return: :class:`esi.models.Token`
         """
-        logger.debug("Creating new token for {0} session {1}".format(request.user, request.session.session_key[:5]))
+        logger.debug(
+            "Creating new token for %s session %s", 
+            request.user, 
+            request.session.session_key[:5]
+        )
         code = request.GET.get('code')
         # attach a user during creation for some functionality in a post_save created receiver I'm working on elsewhere
         model = self.create_from_code(code, user=request.user if request.user.is_authenticated else None)

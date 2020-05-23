@@ -35,30 +35,47 @@ Django-esi adds the following main functionalities to a Django site:
 
 ## Installation
 
-1. Install the latest version directly from PyPI:
+### Step 1: Install the latest version directly from PyPI
 
-    `pip install django-esi`
+```bash
+pip install django-esi
+```
 
-1. Add `esi` to your `INSTALLED_APPS` setting:
+### Step 2: Add `esi` to your `INSTALLED_APPS` setting
 
-   `INSTALLED_APPS += 'esi'`
+```python
+INSTALLED_APPS += [
+    # other apps
+    'esi',
+    # other apps
+]
+```
 
-1. Include the esi urlconf in your project's urls:
+### Step 3: Include the esi urlconf in your project's urls
 
-    `url(r'^sso/', include('esi.urls', namespace='esi')),`
+```python
+url(r'^sso/', include('esi.urls', namespace='esi')),
+```
 
-1. Register an application with the [EVE Developers site](https://developers.eveonline.com/applications)
+### Step 4: Register an application with the [EVE Developers site](https://developers.eveonline.com/applications)
 
-    If your application requires scopes, select `Authenticated API Access` and register all possible scopes your app can request. Otherwise `Authentication Only` will suffice.
-    Set the `Callback URL` to `https://example.com/sso/callback`
+If your application requires scopes, select **Authenticated API Access** and register all possible scopes your app can request. Otherwise **Authentication Only** will suffice.
 
-1. Add SSO client settings to your project settings:
+Set the **Callback URL** to `https://example.com/sso/callback`
 
-    `ESI_SSO_CLIENT_ID = "my client id"`<br>
-    `ESI_SSO_CLIENT_SECRET = "my client secret"`<br>
-    `ESI_SSO_CALLBACK_URL = "https://example.com/sso/callback"`
+### Step 4: Add SSO client settings to your project settings
 
-1. Run `python manage.py migrate` to create models.
+```python
+ESI_SSO_CLIENT_ID = "my client id"
+ESI_SSO_CLIENT_SECRET = "my client secret"
+ESI_SSO_CALLBACK_URL = "https://example.com/sso/callback"
+```
+
+### Step 5: Run migrations to create models
+
+```bash
+python manage.py migrate
+```
 
 ## Upgrade
 
@@ -127,74 +144,107 @@ my_view(request, token):
 
 ## Accessing ESI
 
-django-esi provides a convenience wrapper around the [bravado SwaggerClient](https://github.com/Yelp/bravado), and a basic client provider that can be extended.
+django-esi provides a convenience wrapper around the [bravado SwaggerClient](https://github.com/Yelp/bravado).
 
-The **recommended** way of using a client is to create a provider and in the provider expose a client. creating clients on the fly is slow and also can create memory leaks.
+### New approach for getting a client object
 
-For example in its most basic form;
+All access to ESI happens through a client object that is automatically generated for you and contains all of ESI's routes. The new and **recommended** way of getting that client object is through a single provider instance from the EsiClientProvider class.
 
-### Example `providers.py`
+Note that the previous approach of creating multiple clients directly (e.g. with `esi_client_factory()`) is no longer recommended, since it is slower and prone to cause memory leaks.
+
+### Example for creating a provider
+
+The provider needs to be instantiated at "import time", so it must be defined in the global scope of a module.
+
 ```python
 from esi.clients import EsiClientProvider
 
+# create your own provider
 esi = EsiClientProvider()
+
+def main():
+    # do stuff with your provider
 ```
 
+If you need to use the provider in several module than a good pattern is to define it in it's own module, e.g. `providers.py`, and then import the provider instance into all other modules that need an ESI client.
+
 ### Using public endpoints
+
+Here is a complete example how to use a public endpoint. Public endpoints can in general be accessed without any authentication.
+
 ```python
-from . import providers
+from esi.clients import EsiClientProvider
 
-# call the endpoint
-result = providers.esi.client.Status.get_status().result()
+# create your own provider
+esi = EsiClientProvider()
 
-# ... do stuff with the data
-print(result)
+def main():
+    # call the endpoint
+    result = esi.client.Status.get_status().result()
+
+    # ... do stuff with the data
+    print(result)
 ```
 
 ### Using authenticated endpoints
-Simply add the token param to the operation.
+
+Non-public endpoints will require authentication. You will therefore need to provide a valid access token with your request.
+
+The following example shows how to retrieve data from a non-public endpoint using an already existing token in your database. See also the section [Usage in apps](#usage-in-views) on how to create tokens in your app.
+
 ```python
-from . import providers
+from esi.clients import EsiClientProvider
 from esi.models import Token
 
-character_id = 1234
-required_scopes = ['esi-characters.read_notifications.v1']
+# create your own provider
+esi = EsiClientProvider()
 
-# get a token 
-token = Token.get_token(character_id, required_scopes)
+def main():
+    character_id = 1234
+    required_scopes = ['esi-characters.read_notifications.v1']
 
-# call the endpoint
-notifications = providers.esi.client.Character.get_characters_character_id_notifications(
-    character_id = character_id,  # required paramater for endpoint
-    token = token.valid_access_token()  # refresh the token if required and auth the endpoint
+    # get a token
+    token = Token.get_token(character_id, required_scopes)
+
+    # call the endpoint
+    notifications = esi.client.Character.get_characters_character_id_notifications(
+        # required parameter for endpoint
+        character_id = character_id,  
+        # provide a valid access token, which wil be refresh the token if required
+        token = token.valid_access_token()  
     ).result()
 
-# ... do stuff with the data
+    # ... do stuff with the data
 ```
 
 ### Getting all pages of an endpoint
-`djagno-esi` has a convenient wrapper that will fetch all the pages of data from an ESI endpoint are return it as if it was a single page.
+
+`django-esi` has a convenient shortcut that will fetch all the pages of data from an ESI endpoint and return it as if it was a single page.
 
 One caveat being that you will only get the last pages response if you ask for response with the result data.
 
 ```python
-from . import providers
+from esi.clients import EsiClientProvider
 from esi.models import Token
 
-character_id = 1234
-corporation_id = 5678
-required_scopes = ['esi-assets.read_corporation_assets.v1']
+# create your own provider
+esi = EsiClientProvider()
 
-# get a token 
-token = Token.get_token(character_id, required_scopes)
+def main():
+    character_id = 1234
+    corporation_id = 5678
+    required_scopes = ['esi-assets.read_corporation_assets.v1']
 
-# call the endpoint
-assets = providers.esi.client.Assets.get_corporations_corporation_id_assets(
-    corporation_id=corporation_id,
-    token=token.valid_access_token()
+    # get a token
+    token = Token.get_token(character_id, required_scopes)
+
+    # call the endpoint
+    assets = esi.client.Assets.get_corporations_corporation_id_assets(
+        corporation_id=corporation_id,
+        token=token.valid_access_token()
     ).result_all_pages()
 
-# ... do stuff with the data
+    # ... do stuff with the data
 ```
 
 ### Specifying resource versions
@@ -254,63 +304,59 @@ Recommended intervals are four hours for callback redirect cleanup and daily for
 
 Specifying resource versions introduces one major problem for shared code: not all resources nor all their operations are available on any given version. This can be addressed by shipping a copy of the [versioned latest spec](https://esi.tech.ccp.is/_latest/swagger.json) with your app. **This is the preferred method for deployment.**
 
-To build a client using this local spec, pass an additional kwarg `spec_file` which contains the path to your local swagger.json:
+To build a client using this local spec, pass an additional parameter `spec_file` which contains the path to your local swagger.json:
 
 ```python
-c = esi_client_factory(spec_file='/path/to/swagger.json')
+from esi.clients import EsiClientProvider
+
+esi = EsiClientProvider(spec_file='/path/to/swagger.json')
 ```
 
 For example, a swagger.json in the current file's directory would look like:
 
 ```python
-c = esi_client_factory(
-    spec_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-    'swagger.json')
-)
+import os
+from esi.clients import EsiClientProvider
+
+SWAGGER_SPEC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'swagger.json')
+esi = EsiClientProvider(spec_file=SWAGGER_SPEC)
+
 ```
 
 If a `spec_file` is specified all other versioning is unavailable: ensure you ship a spec with resource versions your app can handle.
 
-### Example `providers.py` with a spec file.
-
-You can also use a spec file with the included `BaseEsiResponseClient` class to create a provider class with a local spec file.
-
-```python
-import os
-from esi.providers import BaseEsiResponseClient
-
-SWAGGER_SPEC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'swagger.json')
-
-esi = BaseEsiResponseClient(spec_file=SWAGGER_SPEC)
-```
-
 ### Getting Response Data
-Simply set the `request_config.also_return_response` to `True` and then call the endpoint. This works int eh same way for both `.result()` and `.result_all_pages()`
+
+Sometimes you may want to also get the internal response object from an ESI response. For example to inspect the response header. For that simply set the `request_config.also_return_response` to `True` and then call the endpoint. This works in the same way for both `.result()` and `.result_all_pages()`
 
 ```python
-from . import providers
+from esi.clients import EsiClientProvider
 from esi.models import Token
 
-character_id = 1234
-required_scopes = ['esi-characters.read_notifications.v1']
+# create your own provider
+esi = EsiClientProvider()
 
-# get a token 
-token = Token.get_token(character_id, required_scopes)
+def main():
+    character_id = 1234
+    required_scopes = ['esi-characters.read_notifications.v1']
 
-# call the endpoint but don't request data.
-operation = providers.esi.client.Character.get_characters_character_id_notifications(
-    character_id = character_id,  # required paramater for endpoint
-    token = token.valid_access_token()  # refresh the token if required and auth the endpoint
+    # get a token
+    token = Token.get_token(character_id, required_scopes)
+
+    # call the endpoint but don't request data.
+    operation = esi.client.Character.get_characters_character_id_notifications(
+        character_id = character_id,
+        token = token.valid_access_token()
     )
 
-# set to get the response as well
-operation.request_config.also_return_response = True
+    # set to get the response as well
+    operation.request_config.also_return_response = True
 
-# get your data
-notifications, response = operation.result()
+    # get your data
+    notifications, response = operation.result()
 
-# ... do stuff with the data
-print(response.headers['Expires'])
+    # ... do stuff with the data
+    print(response.headers['Expires'])
 
 ```
 
@@ -319,10 +365,14 @@ print(response.headers['Expires'])
 ESI data source can also be specified during client creation:
 
 ```python
-client = esi_client_factory(datasource='tranquility')
+from esi.clients import EsiClientProvider
+from esi.models import Token
+
+# create your own provider
+esi = EsiClientProvider(datasource='tranquility')
 ```
 
-Currently the only available data source is `tranquility`. The `singularity` was shutdown by CCP.
+Currently the only available data source is `tranquility`, which is also the default The previously available datasource `singularity` is no longer available.
 
 ## History of this app
 
