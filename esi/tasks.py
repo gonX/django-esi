@@ -1,9 +1,11 @@
-from __future__ import unicode_literals
-from django.utils import timezone
 from datetime import timedelta
-from esi.models import CallbackRedirect, Token
-from celery import shared_task
 import logging
+
+from celery import shared_task
+
+from django.utils import timezone
+
+from .models import CallbackRedirect, Token
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,10 @@ def cleanup_callbackredirect(max_age=300):
     Accepts a max_age parameter, in seconds (default 300).
     """
     max_age = timezone.now() - timedelta(seconds=max_age)
-    logger.debug("Deleting all callback redirects created before {0}".format(max_age.strftime("%b %d %Y %H:%M:%S")))
+    logger.debug(
+        "Deleting all callback redirects created before %s",
+        max_age.strftime("%b %d %Y %H:%M:%S")
+    )
     CallbackRedirect.objects.filter(created__lte=max_age).delete()
 
 

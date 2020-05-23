@@ -1,34 +1,28 @@
-from __future__ import unicode_literals
+from datetime import datetime
+from hashlib import md5
+import json
+import logging
+from urllib import parse as urlparse
+
 from bravado.client import SwaggerClient
 from bravado import requests_client
-from bravado.exception import HTTPError, HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
+from bravado.exception import HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
 from bravado.swagger_model import Loader
 from bravado.http_future import HttpFuture
 from bravado_core.spec import Spec, CONFIG_DEFAULTS
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from esi.errors import TokenExpiredError
-from esi import app_settings
-from django.core.cache import cache
-from datetime import datetime
-from hashlib import md5
-from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError
-from jsonschema.exceptions import RefResolutionError
 
-import json
+from django.core.cache import cache
 
-try:
-    import urlparse
-except ImportError:  # py3
-    from urllib import parse as urlparse
+from .errors import TokenExpiredError
+from . import app_settings
 
-import logging
 
 logger = logging.getLogger(__name__)
 
 SPEC_CONFIG = {'use_models': False}
-
 MAX_RETRIES = 3
+
 
 class CachingHttpFuture(HttpFuture):
     """
@@ -66,26 +60,26 @@ class CachingHttpFuture(HttpFuture):
 
     def result_all_pages(self, **kwargs):
         """
-            Return all pages of data if pages are available in the operation, otherwise return as normal
+        Return all pages of data if pages are available in the operation, otherwise return as normal
         """
-        results = []
+        results = list()
         headers = None
         _also_return_response = self.request_config.also_return_response  # preserve original value
         self.request_config.also_return_response = True  # override to always get the raw response for expiry header
         
-        if "page" in self.operation.params: # check if the operation suports paging
+        if "page" in self.operation.params:
             current_page = 1
             total_pages = 1
            
             while current_page <= total_pages:  # loop all pages and add data to output array
                 self.future.request.params["page"] = current_page
                 self.cache_key = self._build_cache_key(self.future.request)
-                result, headers = self.result()  # will use cache if applicable
+                result, headers = self.result(**kwargs)  # will use cache if applicable
                 total_pages = int(headers.headers['X-Pages'])  # total pages
                 results += result  # append to results list to be seamless to the client
                 current_page += 1
         else:  # it doesn't so just return
-            results, headers = self.result()
+            results, headers = self.result(**kwargs)
 
         self.request_config.also_return_response = _also_return_response  # restore original value
 
@@ -96,18 +90,18 @@ class CachingHttpFuture(HttpFuture):
 
     def result(self, **kwargs):
         if app_settings.ESI_CACHE_RESPONSE and self.future.request.method == 'GET' and self.operation is not None:
-            """
-            Only cache if all are true:
-             - settings dictate caching
-             - it's a http get request
-             - it's to a swagger api endpoint
-            """
+            #
+            # Only cache if all are true:
+            # - settings dictate caching
+            # - it's a http get request
+            # - it's to a swagger api endpoint
+            #             
             cached = cache.get(self.cache_key)
             if cached:
                 result, response = cached
                 expiry = self._time_to_expiry(response.headers['Expires'])
                 if expiry < 0:
-                    logger.warning(("cache expired by {0} seconds, Forcing expiry".format(expiry)))
+                    logger.warning("cache expired by %d seconds, Forcing expiry", expiry)
                     cached = False
 
             if not cached:
@@ -120,7 +114,7 @@ class CachingHttpFuture(HttpFuture):
                         break
                     except (HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable, ConnectionError) as e:
                         if retries < MAX_RETRIES:
-                            logger.warning("ESI error (Retry: {1}/{0})".format(MAX_RETRIES, retries))
+                            logger.warning("ESI error (Retry: %d/%d)", retries, MAX_RETRIES)
                             retries += 1
                         else:
                             raise e
@@ -203,6 +197,7 @@ def get_spec(name, http_client=None, config=None):
     :return: :class:`bravado_core.spec.Spec`
     """
     http_client = http_client or requests_client.RequestsClient()
+
     def load_spec():
         loader = Loader(http_client)
         return loader.load_spec(build_spec_url(name))
@@ -265,7 +260,6 @@ def esi_client_factory(token=None, datasource=None, spec_file=None, version=None
     if token or datasource:
         client.authenticator = TokenAuthenticator(token=token, datasource=datasource)
 
-    
     api_version = version or app_settings.ESI_API_VERSION
 
     if spec_file:
@@ -280,7 +274,7 @@ def minimize_spec(spec_dict, operations=None, resources=None):
     Trims down a source spec dict to only the operations or resources indicated.
     :param spec_dict: The source spec dict to minimize.
     :type spec_dict: dict
-    :param operations: A list of opertion IDs to retain.
+    :param operations: A list of operation IDs to retain.
     :type operations: list of str
     :param resources: A list of resource names to retain.
     :type resources: list of str
@@ -305,15 +299,37 @@ def minimize_spec(spec_dict, operations=None, resources=None):
 
 
 class EsiClientProvider:
+    """Class for providing a single ESI client instance for the whole app"""
+
     _client = None
-    _swagger_spec_file = None
-    def __init__(self, spec_file=None):
-        self._swagger_spec_file = spec_file
+    
+    def __init__(self, datasource=None, spec_file=None, version=None, **kwargs):
+        """        
+        :param datasource: Name of the ESI datasource to access.
+        :param spec_file: Absolute path to a swagger spec file to load.
+        :param version: Base ESI API version. 
+        Accepted values are 'legacy', 'latest', 'dev', or 'vX' where X is a number.
+        :param kwargs: Explicit resource versions to build, 
+        in the form Character='v4'. Same values accepted as version.        
+
+        If a spec_file is specified, specific versioning is not available. 
+        Meaning the version and resource version kwargs
+        are ignored in favour of the versions available in the spec_file.
+        """
+        self._datasource = datasource
+        self._spec_file = spec_file
+        self._version = version
+        self._kwargs = kwargs
 
     @property
     def client(self):
         if self._client is None:
-            self._client = esi_client_factory(spec_file=self._swagger_spec_file)  # latest, from web
+            self._client = esi_client_factory(
+                datasource=self._datasource,                
+                spec_file=self._spec_file,
+                version=self._version,
+                **self._kwargs,
+            )
         return self._client
 
     def __str__(self):

@@ -1,5 +1,4 @@
-from django.core.checks import Error, Warning
-from django.core.checks import register, Tags
+from django.core.checks import Error, Warning, register, Tags
 from django.conf import settings
 
 

@@ -1,12 +1,11 @@
 from datetime import timedelta
 import logging
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 
 from . import _generate_token, _store_as_Token, _set_logger
-from ..clients import *
 from ..models import CallbackRedirect, Token
 from ..tasks import cleanup_callbackredirect, cleanup_token
 
@@ -29,7 +28,6 @@ class TestTasks(TestCase):
         )
         Token.objects.all().delete()
     
-
     def test_cleanup_callbackredirect_default(self):
         CallbackRedirect.objects.all().delete()
         callback_url = 'https://www.example.com/redirect/'
@@ -86,11 +84,10 @@ class TestTasks(TestCase):
             {c1_valid, c3_valid}
         )
 
-
     @patch('esi.models.Token.refresh', autospec=True)
     @patch('esi.managers.app_settings.ESI_TOKEN_VALID_DURATION', 120)
     def test_cleanup_token(self, mock_token_refresh):
-        t_valid_1 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=101,
                 character_name=self.user1.username,
@@ -106,7 +103,7 @@ class TestTasks(TestCase):
             ), 
             self.user2
         )   
-        t_valid_2 = _store_as_Token(
+        _store_as_Token(
             _generate_token(
                 character_id=101,
                 character_name=self.user1.username,
@@ -141,4 +138,3 @@ class TestTasks(TestCase):
         
         all_tokens = Token.objects.all()
         self.assertNotIn(t_no_user_1, all_tokens)
-        

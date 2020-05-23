@@ -1,32 +1,35 @@
-from __future__ import unicode_literals
+import logging
+
+from requests_oauthlib import OAuth2Session
 
 from django.shortcuts import redirect, get_object_or_404, render
 from django.utils.six import string_types
 from django.urls import reverse
+from django.http.response import HttpResponseBadRequest
+
 from esi.models import CallbackRedirect, Token
 from esi import app_settings
-from esi.decorators import tokens_required
-from django.http.response import HttpResponseBadRequest
-from requests_oauthlib import OAuth2Session
-import logging
+from .decorators import tokens_required
+
 
 logger = logging.getLogger(__name__)
 
 
-def sso_redirect(request, scopes=list([]), return_to=None):
+def sso_redirect(request, scopes=None, return_to=None):
     """
     Generates a :model:`esi.CallbackRedirect` for the specified request.
     Redirects to EVE for login.
     Accepts a view or URL name as a redirect after SSO.
     """
-    logger.debug("Initiating redirect of {0} session {1}".format(
+    logger.debug(
+        "Initiating redirect of %s session %s",
         request.user, 
-        request.session.session_key[:5] 
-            if request.session.session_key 
-            else '[no key]'
-    ))
-    if isinstance(scopes, string_types):
-        scopes = list([scopes])
+        request.session.session_key[:5] if request.session.session_key else '[no key]'
+    )
+    if scopes is None:
+        scopes = list()
+    elif isinstance(scopes, string_types):
+        scopes = list(scopes)
 
     # ensure only one callback redirect model per session
     if request.session.session_key:
@@ -47,7 +50,12 @@ def sso_redirect(request, scopes=list([]), return_to=None):
     redirect_url, state = oauth.authorization_url(app_settings.ESI_OAUTH_LOGIN_URL)
 
     CallbackRedirect.objects.create(session_key=request.session.session_key, state=state, url=url)
-    logger.debug("Redirecting {0} session {1} to SSO. Callback will be redirected to {2}".format(request.user, request.session.session_key[:5], url))
+    logger.debug(
+        "Redirecting %s session %s to SSO. Callback will be redirected to %s",
+        request.user, 
+        request.session.session_key[:5], 
+        url
+    )
     return redirect(redirect_url)
 
 
@@ -55,7 +63,11 @@ def receive_callback(request):
     """
     Parses SSO callback, validates, retrieves :model:`esi.Token`, and internally redirects to the target url.
     """
-    logger.debug("Received callback for {0} session {1}".format(request.user, request.session.session_key[:5]))
+    logger.debug(
+        "Received callback for %s session %s", 
+        request.user, 
+        request.session.session_key[:5]
+    )
     # make sure request has required parameters
     code = request.GET.get('code', None)
     state = request.GET.get('state', None)
@@ -71,7 +83,11 @@ def receive_callback(request):
     callback.token = token
     callback.save()
     logger.debug(
-        "Processed callback for {0} session {1}. Redirecting to {2}".format(request.user, request.session.session_key[:5], callback.url))
+        "Processed callback for %s session %s. Redirecting to %s",
+        request.user, 
+        request.session.session_key[:5], 
+        callback.url
+    )
     return redirect(callback.url)
 
 

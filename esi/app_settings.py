@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from django.conf import settings
 
 # These are required for SSO to function. Can be left blank if settings.DEBUG is set to True

@@ -1,7 +1,8 @@
-from __future__ import unicode_literals
+class DjangoEsiException(Exception):
+    pass
 
 
-class TokenError(Exception):
+class TokenError(DjangoEsiException):
     pass
 
 
@@ -17,5 +18,5 @@ class NotRefreshableTokenError(TokenError):
     pass
 
 
-class IncompleteResponseError(Exception):
+class IncompleteResponseError(DjangoEsiException):
     pass

@@ -1,8 +1,10 @@
-from __future__ import unicode_literals
 from django.conf.urls import url
-import esi.views
+
+from . import views
+
 
 app_name = 'esi'
+
 urlpatterns = [
-    url(r'^callback/$', esi.views.receive_callback, name='callback'),
+    url(r'^callback/$', views.receive_callback, name='callback'),
 ]

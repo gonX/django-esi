@@ -13,8 +13,7 @@ from oauthlib.oauth2.rfc6749.errors import InvalidGrantError, \
     MissingTokenError, InvalidClientError, InvalidTokenError, \
     InvalidClientIdError
 
-from . import _dt_eveformat, _generate_token, _store_as_Token, _set_logger
-from ..clients import SwaggerClient
+from . import _generate_token, _store_as_Token, _set_logger
 from ..errors import TokenInvalidError, NotRefreshableTokenError, \
     TokenExpiredError, IncompleteResponseError
 from ..models import Scope, Token, CallbackRedirect
@@ -116,17 +115,14 @@ class TestToken(TestCase):
 
         self.token.refresh(mock_session, mock_auth)
         self.assertEqual(
-            self.token.refresh_token,
-            'refresh_token_2'
-            )
+            self.token.refresh_token, 'refresh_token_2'
+        )
         self.assertEqual(
-            self.token.access_token,
-            'access_token_2'
-            )
+            self.token.access_token, 'access_token_2'
+        )
         self.assertGreaterEqual(
-            self.token.created,
-            timezone.now() - timedelta(seconds=60))
-
+            self.token.created, timezone.now() - timedelta(seconds=60)
+        )
 
     @patch('esi.models.HTTPBasicAuth', autospec=True)
     @patch('esi.models.OAuth2Session', autospec=True)
@@ -142,21 +138,18 @@ class TestToken(TestCase):
         self.assertEqual(
             self.token.refresh_token,
             'refresh_token_2'
-            )
+        )
         self.assertEqual(
             self.token.access_token,
             'access_token_2'
-            )
+        )
         self.assertGreaterEqual(
             self.token.created,
             timezone.now() - timedelta(seconds=60))
 
     def test_valid_access_token(self):
         self.assertFalse(self.token.expired)
-        self.assertEqual(
-            self.token.valid_access_token(),
-            'access_token'
-            )
+        self.assertEqual(self.token.valid_access_token(), 'access_token')
 
     @patch('esi.models.HTTPBasicAuth', autospec=True)
     @patch('esi.models.OAuth2Session', autospec=True)
@@ -172,14 +165,14 @@ class TestToken(TestCase):
         self.token.created -= timedelta(121)
         self.assertTrue(self.token.expired)
         self.assertEqual(
-            self.token.valid_access_token(),
-            'access_token_new'
-            )
+            self.token.valid_access_token(), 'access_token_new')
 
     @patch('esi.models.HTTPBasicAuth', autospec=True)
     @patch('esi.models.OAuth2Session', autospec=True)
     @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
-    def test_valid_access_token_cant_refresh(self, mock_OAuth2Session, mock_HTTPBasicAuth):
+    def test_valid_access_token_cant_refresh(
+        self, mock_OAuth2Session, mock_HTTPBasicAuth
+    ):
         self.token.refresh_token = None
         self.token.created -= timedelta(121)
         self.assertTrue(self.token.expired)
@@ -196,7 +189,6 @@ class TestToken(TestCase):
         self.token.refresh_token = None
         with self.assertRaises(NotRefreshableTokenError):
             self.token.refresh(mock_session, mock_auth)
-
 
     def test_refresh_errors_2(self):
         mock_auth = Mock()
@@ -222,14 +214,12 @@ class TestToken(TestCase):
         with self.assertRaises(ImproperlyConfigured):
             self.token.refresh(mock_session, mock_auth)
 
-
     @patch('esi.models.esi_client_factory', autospec=True)
     def test_get_esi_client(self, mock_esi_client):
         mock_esi_client.return_value = "Johnny"
         x = self.token.get_esi_client()
         self.assertEqual(x, "Johnny")
         self.assertEqual(mock_esi_client.call_count, 1)
-
 
     @patch('esi.models.OAuth2Session', autospec=True)
     def test_get_token_data(self, mock_OAuth2Session):
@@ -240,7 +230,6 @@ class TestToken(TestCase):
         data = self.token.get_token_data(access_token='access_token_2')
         self.assertEqual(data, "Johnny")
         self.assertEqual(mock_OAuth2Session.call_count, 1)
-
 
     @patch('esi.models.Token.get_token_data')
     def test_update_token_data_normal_1(self, mock_get_token_data):
@@ -263,7 +252,6 @@ class TestToken(TestCase):
             self.token.token_type,
             'Character'
         )
-
 
     @patch('esi.models.HTTPBasicAuth', autospec=True)
     @patch('esi.models.OAuth2Session', autospec=True)
@@ -296,7 +284,6 @@ class TestToken(TestCase):
             99
         )
         
-      
     @patch('esi.models.Token.get_token_data')
     def test_update_token_data_normal_3(self, mock_get_token_data):
         mock_get_token_data.return_value = {
@@ -323,7 +310,6 @@ class TestToken(TestCase):
             'Character'
         )
 
-
     @patch('esi.models.Token.get_token_data', auto_spec=True)
     def test_update_token_data_error(
         self, 
@@ -340,7 +326,7 @@ class TestCallbackRedirect(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.redirect_url = 'https://www.example.com/%s/' %  ('x' * (2048 - 25))
+        cls.redirect_url = 'https://www.example.com/%s/' % ('x' * (2048 - 25))
         cls.cb = CallbackRedirect.objects.create(
             session_key='abc',
             state='xyz',
