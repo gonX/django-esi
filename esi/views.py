@@ -29,7 +29,7 @@ def sso_redirect(request, scopes=None, return_to=None):
     if scopes is None:
         scopes = list()
     elif isinstance(scopes, string_types):
-        scopes = list(scopes)
+        scopes = list([scopes])
 
     # ensure only one callback redirect model per session
     if request.session.session_key:
