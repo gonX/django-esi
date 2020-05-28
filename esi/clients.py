@@ -40,8 +40,14 @@ class CachingHttpFuture(HttpFuture):
         :return: formatted cache name
         """
         str_hash = md5(
-            (request.method + request.url + str(request.params) + str(request.data) + str(request.json)).encode(
-                'utf-8')).hexdigest()
+            (
+                request.method 
+                + request.url 
+                + str(request.params) 
+                + str(request.data) 
+                + str(request.json)
+            ).encode('utf-8')
+        ).hexdigest()
         return 'esi_%s' % str_hash
 
     @staticmethod
@@ -60,36 +66,48 @@ class CachingHttpFuture(HttpFuture):
 
     def result_all_pages(self, **kwargs):
         """
-        Return all pages of data if pages are available in the operation, otherwise return as normal
+        Return all pages of data if pages are available in the operation, 
+        otherwise return as normal
         """
         results = list()
         headers = None
-        _also_return_response = self.request_config.also_return_response  # preserve original value
-        self.request_config.also_return_response = True  # override to always get the raw response for expiry header
+        # preserve original value
+        _also_return_response = self.request_config.also_return_response
+        # override to always get the raw response for expiry header
+        self.request_config.also_return_response = True  
         
         if "page" in self.operation.params:
             current_page = 1
             total_pages = 1
            
-            while current_page <= total_pages:  # loop all pages and add data to output array
+            # loop all pages and add data to output array
+            while current_page <= total_pages:  
                 self.future.request.params["page"] = current_page
                 self.cache_key = self._build_cache_key(self.future.request)
-                result, headers = self.result(**kwargs)  # will use cache if applicable
-                total_pages = int(headers.headers['X-Pages'])  # total pages
-                results += result  # append to results list to be seamless to the client
+                # will use cache if applicable
+                result, headers = self.result(**kwargs)
+                total_pages = int(headers.headers['X-Pages'])  
+                # append to results list to be seamless to the client
+                results += result  
                 current_page += 1
         else:  # it doesn't so just return
             results, headers = self.result(**kwargs)
 
-        self.request_config.also_return_response = _also_return_response  # restore original value
+        # restore original value
+        self.request_config.also_return_response = _also_return_response  
 
-        if self.request_config.also_return_response:  # obey the output 
+        # obey the output 
+        if self.request_config.also_return_response:  
             return results, headers
         else:
             return results
 
     def result(self, **kwargs):
-        if app_settings.ESI_CACHE_RESPONSE and self.future.request.method == 'GET' and self.operation is not None:
+        if (
+            app_settings.ESI_CACHE_RESPONSE 
+            and self.future.request.method == 'GET' 
+            and self.operation is not None
+        ):
             #
             # Only cache if all are true:
             # - settings dictate caching
@@ -101,25 +119,38 @@ class CachingHttpFuture(HttpFuture):
                 result, response = cached
                 expiry = self._time_to_expiry(response.headers['Expires'])
                 if expiry < 0:
-                    logger.warning("cache expired by %d seconds, Forcing expiry", expiry)
+                    logger.warning(
+                        "cache expired by %d seconds, Forcing expiry", expiry
+                    )
                     cached = False
 
             if not cached:
-                _also_return_response = self.request_config.also_return_response  # preserve original value
-                self.request_config.also_return_response = True  # override to always get the raw response for expiry header
+                # preserve original value
+                _also_return_response = self.request_config.also_return_response  
+                # override to always get the raw response for expiry header
+                self.request_config.also_return_response = True  
                 retries = 1
                 while retries <= MAX_RETRIES:
                     try:
-                        result, response = super(CachingHttpFuture, self).result(**kwargs)
+                        result, response = \
+                            super(CachingHttpFuture, self).result(**kwargs)
                         break
-                    except (HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable, ConnectionError) as e:
+                    except (
+                        HTTPBadGateway, 
+                        HTTPGatewayTimeout, 
+                        HTTPServiceUnavailable, 
+                        ConnectionError
+                    ) as e:
                         if retries < MAX_RETRIES:
-                            logger.warning("ESI error (Retry: %d/%d)", retries, MAX_RETRIES)
+                            logger.warning(
+                                "ESI error (Retry: %d/%d)", retries, MAX_RETRIES
+                            )
                             retries += 1
                         else:
                             raise e
-
-                self.request_config.also_return_response = _also_return_response  # restore original value
+                
+                # restore original value
+                self.request_config.also_return_response = _also_return_response  
 
                 if 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
@@ -155,8 +186,10 @@ class TokenAuthenticator(requests_client.Authenticator):
                 self.token.refresh()
             else:
                 raise TokenExpiredError()
-        request.headers['Authorization'] = 'Bearer ' + self.token.access_token if self.token else None
-        request.params['datasource'] = self.datasource or app_settings.ESI_API_DATASOURCE
+        request.headers['Authorization'] = \
+            'Bearer ' + self.token.access_token if self.token else None
+        request.params['datasource'] = \
+            self.datasource or app_settings.ESI_API_DATASOURCE
         return request
 
 
@@ -202,28 +235,37 @@ def get_spec(name, http_client=None, config=None):
         loader = Loader(http_client)
         return loader.load_spec(build_spec_url(name))
 
-    spec_dict = cache.get_or_set(build_cache_name(name), load_spec, app_settings.ESI_SPEC_CACHE_DURATION)
+    spec_dict = cache.get_or_set(
+        build_cache_name(name), load_spec, app_settings.ESI_SPEC_CACHE_DURATION
+    )
     config = dict(CONFIG_DEFAULTS, **(config or {}))
     return Spec.from_dict(spec_dict, build_spec_url(name), http_client, config)
 
 
 def build_spec(base_version, http_client=None, **kwargs):
     """
-    Generates the Spec used to initialize a SwaggerClient, supporting mixed resource versions
+    Generates the Spec used to initialize a SwaggerClient, 
+    supporting mixed resource versions
     :param http_client: :class:`bravado.requests_client.RequestsClient`
-    :param base_version: Version to base the spec on. Any resource without an explicit version will be this.
+    :param base_version: Version to base the spec on. 
+    Any resource without an explicit version will be this.
     :param kwargs: Explicit resource versions, by name (eg Character='v4')
     :return: :class:`bravado_core.spec.Spec`
     """
     base_spec = get_spec(base_version, http_client=http_client, config=SPEC_CONFIG)
     if kwargs:
         for resource, resource_version in kwargs.items():
-            versioned_spec = get_spec(resource_version, http_client=http_client, config=SPEC_CONFIG)
+            versioned_spec = get_spec(
+                resource_version, http_client=http_client, config=SPEC_CONFIG
+            )
             try:
                 spec_resource = versioned_spec.resources[resource.capitalize()]
             except KeyError:
                 raise AttributeError(
-                    'Resource {0} not found on API revision {1}'.format(resource, resource_version))
+                    'Resource {0} not found on API revision {1}'.format(
+                        resource, resource_version
+                    )
+                )
             base_spec.resources[resource.capitalize()] = spec_resource
     return base_spec
 
@@ -238,20 +280,27 @@ def read_spec(path, http_client=None):
     with open(path, 'r') as f:
         spec_dict = json.loads(f.read())
 
-    return SwaggerClient.from_spec(spec_dict, http_client=http_client, config=SPEC_CONFIG)
+    return SwaggerClient.from_spec(
+        spec_dict, http_client=http_client, config=SPEC_CONFIG
+    )
 
 
-def esi_client_factory(token=None, datasource=None, spec_file=None, version=None, **kwargs):
+def esi_client_factory(
+    token=None, datasource=None, spec_file=None, version=None, **kwargs
+):
     """
     Generates an ESI client.
     :param token: :class:`esi.Token` used to access authenticated endpoints.
     :param datasource: Name of the ESI datasource to access.
     :param spec_file: Absolute path to a swagger spec file to load.
-    :param version: Base ESI API version. Accepted values are 'legacy', 'latest', 'dev', or 'vX' where X is a number.
-    :param kwargs: Explicit resource versions to build, in the form Character='v4'. Same values accepted as version.
+    :param version: Base ESI API version. Accepted values are 'legacy', 'latest', 
+    'dev', or 'vX' where X is a number.
+    :param kwargs: Explicit resource versions to build, in the form Character='v4'. 
+    Same values accepted as version.
     :return: :class:`bravado.client.SwaggerClient`
 
-    If a spec_file is specified, specific versioning is not available. Meaning the version and resource version kwargs
+    If a spec_file is specified, specific versioning is not available. 
+    Meaning the version and resource version kwargs
     are ignored in favour of the versions available in the spec_file.
     """
 
@@ -290,7 +339,10 @@ def minimize_spec(spec_dict, operations=None, resources=None):
 
     for path_name, path in spec_dict['paths'].items():
         for method, data in path.items():
-            if data['operationId'] in operations or any(tag in resources for tag in data['tags']):
+            if (
+                data['operationId'] in operations 
+                or any(tag in resources for tag in data['tags'])
+            ):
                 if path_name not in minimized['paths']:
                     minimized['paths'][path_name] = {}
                 minimized['paths'][path_name][method] = data

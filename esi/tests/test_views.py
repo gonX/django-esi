@@ -63,8 +63,9 @@ class TestSsoCallbackView(TestCase):
 
         self.assertEqual(http_response.url, redirect_url)
 
-        callback_redirects = CallbackRedirect.objects\
-            .filter(session_key=request.session.session_key)
+        callback_redirects = (
+            CallbackRedirect.objects.filter(session_key=request.session.session_key)
+        )
         self.assertEqual(len(callback_redirects), 1)
         callback_redirect = callback_redirects.first()
         self.assertEqual(callback_redirect.url, redirect_sub_url)
@@ -93,8 +94,9 @@ class TestSsoCallbackView(TestCase):
 
         self.assertEqual(http_response.url, redirect_url)
 
-        callback_redirects = CallbackRedirect.objects\
-            .filter(session_key=request.session.session_key)
+        callback_redirects = (
+            CallbackRedirect.objects.filter(session_key=request.session.session_key)
+        )
         self.assertEqual(len(callback_redirects), 1)
         callback_redirect = callback_redirects.first()
         self.assertEqual(callback_redirect.url, redirect_sub_url)
@@ -157,8 +159,9 @@ class TestSsoCallbackView(TestCase):
 
         self.assertEqual(http_response.url, redirect_url)
 
-        callback_redirects = CallbackRedirect.objects\
-            .filter(session_key=request.session.session_key)
+        callback_redirects = (
+            CallbackRedirect.objects.filter(session_key=request.session.session_key)
+        )
         self.assertEqual(len(callback_redirects), 1)
         callback_redirect = callback_redirects.first()
         self.assertEqual(callback_redirect.url, my_view_url)
@@ -179,8 +182,9 @@ class TestSsoCallbackView(TestCase):
 
         sso_redirect(request, return_to='callback3')
 
-        callback_redirects = CallbackRedirect.objects\
-            .filter(session_key=request.session.session_key)
+        callback_redirects = (
+            CallbackRedirect.objects.filter(session_key=request.session.session_key)
+        )
         self.assertEqual(len(callback_redirects), 1)
         callback_redirect = callback_redirects.first()
         self.assertEqual(callback_redirect.url, '/callback3/')
@@ -196,8 +200,9 @@ class TestSsoCallbackView(TestCase):
 
         sso_redirect(request)
 
-        callback_redirects = CallbackRedirect.objects\
-            .filter(session_key=request.session.session_key)
+        callback_redirects = (
+            CallbackRedirect.objects.filter(session_key=request.session.session_key)
+        )
         self.assertEqual(len(callback_redirects), 1)
         callback_redirect = callback_redirects.first()
         self.assertEqual(callback_redirect.url, '/callback2/')

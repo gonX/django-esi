@@ -35,7 +35,8 @@ class TokenQueryset(models.QuerySet):
         :return: All expired tokens.
         :rtype: :class:`esi.managers.TokenQueryset`
         """
-        max_age = timezone.now() - timedelta(seconds=app_settings.ESI_TOKEN_VALID_DURATION)
+        max_age = \
+            timezone.now() - timedelta(seconds=app_settings.ESI_TOKEN_VALID_DURATION)
         return self.filter(created__lte=max_age)
 
     def bulk_refresh(self):
@@ -46,7 +47,9 @@ class TokenQueryset(models.QuerySet):
         Excludes tokens for which the refresh was incomplete for other reasons.
         """
         session = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID)
-        auth = requests.auth.HTTPBasicAuth(app_settings.ESI_SSO_CLIENT_ID, app_settings.ESI_SSO_CLIENT_SECRET)
+        auth = requests.auth.HTTPBasicAuth(
+            app_settings.ESI_SSO_CLIENT_ID, app_settings.ESI_SSO_CLIENT_SECRET
+        )
         incomplete = []
         for model in self.filter(refresh_token__isnull=False):
             try:
@@ -101,8 +104,12 @@ class TokenQueryset(models.QuerySet):
         :rtype: :class:`esi.managers.TokenQueryset`
         """
         num_scopes = len(_process_scopes(scope_string))
-        pks = [v['pk'] for v in self.annotate(models.Count('scopes')).require_scopes(scope_string).filter(
-            scopes__count=num_scopes).values('pk', 'scopes__id')]
+        scopes_qs = self\
+            .annotate(models.Count('scopes'))\
+            .require_scopes(scope_string)\
+            .filter(scopes__count=num_scopes)\
+            .values('pk', 'scopes__id')
+        pks = [v['pk'] for v in scopes_qs]
         return self.filter(pk__in=pks)
 
     def equivalent_to(self, token):
@@ -111,8 +118,11 @@ class TokenQueryset(models.QuerySet):
         :param token: :class:`esi.models.Token`
         :return: :class:`esi.managers.TokenQueryset`
         """
-        return self.filter(character_id=token.character_id).require_scopes_exact(token.scopes.all()).filter(
-            models.Q(user=token.user) | models.Q(user__isnull=True)).exclude(pk=token.pk)
+        return self\
+            .filter(character_id=token.character_id)\
+            .require_scopes_exact(token.scopes.all())\
+            .filter(models.Q(user=token.user) | models.Q(user__isnull=True))\
+            .exclude(pk=token.pk)
 
 
 class TokenManager(models.Manager):
@@ -133,9 +143,15 @@ class TokenManager(models.Manager):
 
         # perform code exchange
         logger.debug("Creating new token from code %s", code[:-5])
-        oauth = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID, redirect_uri=app_settings.ESI_SSO_CALLBACK_URL)
-        token = oauth.fetch_token(app_settings.ESI_TOKEN_URL, client_secret=app_settings.ESI_SSO_CLIENT_SECRET,
-                                  code=code)
+        oauth = OAuth2Session(
+            app_settings.ESI_SSO_CLIENT_ID, 
+            redirect_uri=app_settings.ESI_SSO_CALLBACK_URL
+        )
+        token = oauth.fetch_token(
+            app_settings.ESI_TOKEN_URL, 
+            client_secret=app_settings.ESI_SSO_CLIENT_SECRET,
+            code=code
+        )
         r = oauth.request('get', app_settings.ESI_TOKEN_VERIFY_URL)
         r.raise_for_status()
         token_data = r.json()
@@ -160,7 +176,8 @@ class TokenManager(models.Manager):
                     scope = Scope.objects.get(name=s)
                     model.scopes.add(scope)
                 except Scope.DoesNotExist:
-                    # This scope isn't included in a data migration. Create a placeholder until it updates.
+                    # This scope isn't included in a data migration. 
+                    # Create a placeholder until it updates.
                     try:
                         help_text = s.split('.')[1].replace('_', ' ').capitalize()
                     except IndexError:
@@ -207,6 +224,9 @@ class TokenManager(models.Manager):
             request.session.session_key[:5]
         )
         code = request.GET.get('code')
-        # attach a user during creation for some functionality in a post_save created receiver I'm working on elsewhere
-        model = self.create_from_code(code, user=request.user if request.user.is_authenticated else None)
+        # attach a user during creation for some functionality in a post_save created 
+        # receiver I'm working on elsewhere
+        model = self.create_from_code(
+            code, user=request.user if request.user.is_authenticated else None
+        )
         return model
