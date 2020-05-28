@@ -275,8 +275,7 @@ class TestTokenQuerySet(TestCase):
         )
         t2.created -= timedelta(121)
         t2.save()
-        mock_bulk_refresh.return_value = Token.objects\
-            .filter(pk__in=[t2.pk])
+        mock_bulk_refresh.return_value = Token.objects.filter(pk__in=[t2.pk])
                 
         self.assertSetEqual(
             set(Token.objects.get_queryset().require_valid()),

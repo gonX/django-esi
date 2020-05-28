@@ -46,10 +46,16 @@ def sso_redirect(request, scopes=None, return_to=None):
     else:
         url = request.get_full_path()
 
-    oauth = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID, redirect_uri=app_settings.ESI_SSO_CALLBACK_URL, scope=scopes)
+    oauth = OAuth2Session(
+        app_settings.ESI_SSO_CLIENT_ID, 
+        redirect_uri=app_settings.ESI_SSO_CALLBACK_URL, 
+        scope=scopes
+    )
     redirect_url, state = oauth.authorization_url(app_settings.ESI_OAUTH_LOGIN_URL)
 
-    CallbackRedirect.objects.create(session_key=request.session.session_key, state=state, url=url)
+    CallbackRedirect.objects.create(
+        session_key=request.session.session_key, state=state, url=url
+    )
     logger.debug(
         "Redirecting %s session %s to SSO. Callback will be redirected to %s",
         request.user, 
@@ -61,7 +67,8 @@ def sso_redirect(request, scopes=None, return_to=None):
 
 def receive_callback(request):
     """
-    Parses SSO callback, validates, retrieves :model:`esi.Token`, and internally redirects to the target url.
+    Parses SSO callback, validates, retrieves :model:`esi.Token`, 
+    and internally redirects to the target url.
     """
     logger.debug(
         "Received callback for %s session %s", 
@@ -78,7 +85,9 @@ def receive_callback(request):
         logger.debug("Missing parameters for code exchange.")
         return HttpResponseBadRequest()
 
-    callback = get_object_or_404(CallbackRedirect, state=state, session_key=request.session.session_key)
+    callback = get_object_or_404(
+        CallbackRedirect, state=state, session_key=request.session.session_key
+    )
     token = Token.objects.create_from_request(request)
     callback.token = token
     callback.save()

@@ -66,7 +66,12 @@ def tokens_required(scopes='', new=False):
                     return redirect_to_login(request.get_full_path())
 
                 # collect tokens in db, check if still valid, return if any
-                tokens = Token.objects.filter(user__pk=request.user.pk).require_scopes(scopes).require_valid()
+                tokens = (
+                    Token.objects
+                    .filter(user__pk=request.user.pk)
+                    .require_scopes(scopes)
+                    .require_valid()
+                )
                 if tokens.exists():
                     logger.debug(
                         "Retrieved %s tokens for %s session %s",
@@ -92,7 +97,8 @@ def tokens_required(scopes='', new=False):
 
 def token_required(scopes='', new=False):
     """
-    Decorator for views which supplies a single, user-selected token for the view to process.
+    Decorator for views which supplies a single, 
+    user-selected token for the view to process.
     Same parameters as tokens_required.
     """
 
@@ -129,9 +135,21 @@ def token_required(scopes='', new=False):
                     try:
                         token = Token.objects.get(pk=token_pk)
                         # ensure token belongs to this user and has required scopes
-                        if ((token.user and token.user == request.user) or not token.user) and Token.objects.filter(
-                                pk=token_pk).require_scopes(scopes).require_valid().exists():
-                            logger.debug("Selected token fulfills requirements of view. Returning.")
+                        if (
+                            (
+                                (token.user and token.user == request.user) 
+                                or not token.user
+                            ) 
+                            and Token.objects
+                            .filter(pk=token_pk)
+                            .require_scopes(scopes)
+                            .require_valid()
+                            .exists()
+                        ):
+                            logger.debug(
+                                "Selected token fulfills requirements of view. "
+                                "Returning."
+                            )
                             return view_func(request, token, *args, **kwargs)
 
                     except Token.DoesNotExist:
@@ -139,7 +157,12 @@ def token_required(scopes='', new=False):
 
             if not new:
                 # present the user with token choices
-                tokens = Token.objects.filter(user__pk=request.user.pk).require_scopes(scopes).require_valid()
+                tokens = (
+                    Token.objects
+                    .filter(user__pk=request.user.pk)
+                    .require_scopes(scopes)
+                    .require_valid()
+                )
                 if tokens.exists():
                     logger.debug(
                         "Returning list of available tokens for %s.", request.user
@@ -170,7 +193,8 @@ def token_required(scopes='', new=False):
 
 def single_use_token(scopes='', new=False):
     """
-    Decorator for views which supplies a single use token granted via sso login regardless of login state.
+    Decorator for views which supplies a single use token granted via sso login 
+    regardless of login state.
     Same parameters as tokens_required.
     """
 

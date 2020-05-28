@@ -16,7 +16,7 @@ def _generate_token(
     character_owner_hash: str = 'character_owner_hash',       
     scopes: list = None,
     timestamp_dt: object = None,
-    expires_in: int  = 1200,
+    expires_in: int = 1200,
 ) -> dict:
     from datetime import datetime, timedelta
 
