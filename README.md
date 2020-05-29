@@ -150,7 +150,9 @@ django-esi provides a convenience wrapper around the [bravado SwaggerClient](htt
 
 All access to ESI happens through a client object that is automatically generated for you and contains all of ESI's routes. The new and **recommended** way of getting that client object is through a single provider instance from the EsiClientProvider class.
 
-Note that the previous approach of creating multiple clients directly (e.g. with `esi_client_factory()`) is no longer recommended, since it is slower and prone to cause memory leaks.
+The new provider approach has two main advantages: First, creating a new client is slow (e.g. can takes up to 5 seconds). So, for maximum performance you want to avoid creating multiple clients in your app. Using the provider automatically ensures this.
+
+Second, the previous approach of creating multiple clients can cause memory leaks.  Especially when used in concurrent environment (e.g. threads or celery tasks), where each worker is creating it's own client.
 
 ### Example for creating a provider
 
@@ -180,7 +182,7 @@ esi = EsiClientProvider()
 
 def main():
     # call the endpoint
-    result = esi.client.Status.get_status().result()
+    result = esi.client.Status.get_status().results()
 
     # ... do stuff with the data
     print(result)
@@ -212,40 +214,22 @@ def main():
         character_id = character_id,  
         # provide a valid access token, which wil be refresh the token if required
         token = token.valid_access_token()  
-    ).result()
+    ).results()
 
     # ... do stuff with the data
 ```
 
-### Getting all pages of an endpoint
+### results() vs. result()
 
-`django-esi` has a convenient shortcut that will fetch all the pages of data from an ESI endpoint and return it as if it was a single page.
+django-esi offers two similar methods for requesting the response from an endpoint: results() and result(). Here is a quick overview how they differ:
 
-One caveat being that you will only get the last pages response if you ask for response with the result data.
+Topic | results() | result()
+-- | -- | --
+Paging | Automatically returns all pages if they are more than one | Only returns the fist page or the requested page (when specified with page parameter)
+Headers | Returns the headers for the last retrieved page | Returns the headers for the first / requested page
+Backwards compatibility | New feature in 2.0 | Works mostly as in 1.6
 
-```python
-from esi.clients import EsiClientProvider
-from esi.models import Token
-
-# create your own provider
-esi = EsiClientProvider()
-
-def main():
-    character_id = 1234
-    corporation_id = 5678
-    required_scopes = ['esi-assets.read_corporation_assets.v1']
-
-    # get a token
-    token = Token.get_token(character_id, required_scopes)
-
-    # call the endpoint
-    assets = esi.client.Assets.get_corporations_corporation_id_assets(
-        corporation_id=corporation_id,
-        token=token.valid_access_token()
-    ).result_all_pages()
-
-    # ... do stuff with the data
-```
+In general we recommend to use results(), so you don't have to worry about paging. Nevertheless, result() gives you more direct control of your API request and has it's uses, e.g when you are only interested in the first page and do not want to wait for all pages to download from the API.
 
 ### Specifying resource versions
 
@@ -327,7 +311,7 @@ If a `spec_file` is specified all other versioning is unavailable: ensure you sh
 
 ### Getting Response Data
 
-Sometimes you may want to also get the internal response object from an ESI response. For example to inspect the response header. For that simply set the `request_config.also_return_response` to `True` and then call the endpoint. This works in the same way for both `.result()` and `.result_all_pages()`
+Sometimes you may want to also get the internal response object from an ESI response. For example to inspect the response header. For that simply set the `request_config.also_return_response` to `True` and then call the endpoint. This works in the same way for both `.result()` and `.results()`
 
 ```python
 from esi.clients import EsiClientProvider
@@ -353,7 +337,7 @@ def main():
     operation.request_config.also_return_response = True
 
     # get your data
-    notifications, response = operation.result()
+    notifications, response = operation.results()
 
     # ... do stuff with the data
     print(response.headers['Expires'])
