@@ -29,7 +29,7 @@ class CachingHttpFuture(HttpFuture):
     Used to add caching to certain HTTP requests according to "Expires" header
     """
     def __init__(self, *args, **kwargs):
-        super(CachingHttpFuture, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.cache_key = self._build_cache_key(self.future.request)
 
     @staticmethod
@@ -64,10 +64,12 @@ class CachingHttpFuture(HttpFuture):
         except ValueError:
             return 0
 
-    def result_all_pages(self, **kwargs):
-        """
-        Return all pages of data if pages are available in the operation, 
-        otherwise return as normal
+    def results(self, **kwargs):
+        """Executes the request and returns the response from ESI for the current 
+        route. Response will include all pages if there are more available.
+
+        Optional parameters:
+        - timeout: timeout for request to ESI in seconds, overwrites default
         """
         results = list()
         headers = None
@@ -103,6 +105,14 @@ class CachingHttpFuture(HttpFuture):
             return results
 
     def result(self, **kwargs):
+        """Executes the request and returns the response from ESI. Response will
+        include the requested / first page only if there are more pages available.
+
+        Optional parameters:
+        - timeout: timeout for request to ESI in seconds, overwrites default
+        """
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = app_settings.ESI_REQUESTS_DEFAULT_TIMEOUT
         if (
             app_settings.ESI_CACHE_RESPONSE 
             and self.future.request.method == 'GET' 
@@ -132,8 +142,7 @@ class CachingHttpFuture(HttpFuture):
                 retries = 1
                 while retries <= MAX_RETRIES:
                     try:
-                        result, response = \
-                            super(CachingHttpFuture, self).result(**kwargs)
+                        result, response = super().result(**kwargs)
                         break
                     except (
                         HTTPBadGateway, 
@@ -162,7 +171,7 @@ class CachingHttpFuture(HttpFuture):
             else:
                 return result
         else:
-            return super(CachingHttpFuture, self).result(**kwargs)
+            return super().result(**kwargs)
 
 
 requests_client.HttpFuture = CachingHttpFuture
@@ -176,7 +185,7 @@ class TokenAuthenticator(requests_client.Authenticator):
 
     def __init__(self, token=None, datasource=None):
         host = urlparse.urlsplit(app_settings.ESI_API_URL).hostname
-        super(TokenAuthenticator, self).__init__(host)
+        super().__init__(host)
         self.token = token
         self.datasource = datasource
 

@@ -21,6 +21,10 @@ ESI_ALWAYS_CREATE_TOKEN = getattr(settings, 'ESI_ALWAYS_CREATE_TOKEN', False)
 # Disable to stop caching endpoint responses
 ESI_CACHE_RESPONSE = getattr(settings, 'ESI_CACHE_RESPONSE', True)
 
+# Default timeout for all requests to ESI. 
+# Can be overwritten by passing "timeout" with result()
+ESI_REQUESTS_DEFAULT_TIMEOUT = getattr(settings, 'ESI_REQUESTS_DEFAULT_TIMEOUT', 10)
+
 # These probably won't ever change. Override if needed.
 ESI_API_URL = getattr(settings, 'ESI_API_URL', 'https://esi.evetech.net/')
 ESI_OAUTH_LOGIN_URL = getattr(
@@ -30,5 +34,5 @@ ESI_TOKEN_URL = getattr(settings, 'ESI_CODE_EXCHANGE_URL', ESI_OAUTH_URL + "/tok
 ESI_TOKEN_VERIFY_URL = getattr(
     settings, 'ESI_TOKEN_EXCHANGE_URL', ESI_OAUTH_URL + "/verify"
 )
-ESI_TOKEN_VALID_DURATION = int(getattr(settings, 'ESI_TOKEN_VALID_DURATION', 1200))
+ESI_TOKEN_VALID_DURATION = int(getattr(settings, 'ESI_TOKEN_VALID_DURATION', 1170))
 ESI_SPEC_CACHE_DURATION = int(getattr(settings, 'ESI_SPEC_CACHE_DURATION', 3600))
