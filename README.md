@@ -17,8 +17,9 @@ Django app for easy access to the EVE Swagger Interface (ESI)
 - [Usage in views](#usage-in-views)
 - [Accessing ESI](#accessing-esi)
 - [Cleaning the database](#cleaning-the-database)
-- [Operating on singularity](#operating-on-singularity)
-- [History of this app](#operating-on-singularity)
+- [Advanced features](#advanced-features)
+- [Settings](#settings)
+- [History of this app](#history-of-this-app)
 - [Change log](CHANGELOG.md)
 
 ## Overview
@@ -31,7 +32,7 @@ Django-esi adds the following main functionalities to a Django site:
 
 - Dynamically generated client for interacting with public and private ESI endpoints
 - Support for adding EVE SSO to authenticate characters and retrieve tokens
-- Control over ESI endpoint versions
+- Control over which ESI endpoint versions are used
 
 ## Installation
 
@@ -231,6 +232,40 @@ Backwards compatibility | New feature in 2.0 | Works mostly as in 1.6
 
 In general we recommend to use results(), so you don't have to worry about paging. Nevertheless, result() gives you more direct control of your API request and has it's uses, e.g when you are only interested in the first page and do not want to wait for all pages to download from the API.
 
+### Getting localized responses from ESI
+
+Some ESI endpoints support localization, which means they are able to return the content localized in one of the supported languages.
+
+To retrieve localized content just provide the language code in your request. The following example will retrieve the type info for the Svipul in Korean:
+
+```Python
+result = (
+    esi.client.Universe
+    .get_universe_types_type_id(type_id=30004984, language='ko')
+    .results()
+)
+```
+
+A common use case it to retrieve localizations for all languages for the current request. For this django-esi provides the convenience method `results_localized()`. It substitutes `results()` and will return the response in all officially supported languages by default.
+
+```Python
+result = (
+    esi.client.Universe
+    .get_universe_types_type_id(type_id=30004984)
+    .results_localized()
+)
+```
+
+Alternatively you can pass the list of languages (as language code) that you are interested in:
+
+```Python
+result = (
+    esi.client.Universe
+    .get_universe_types_type_id(type_id=30004984)
+    .results_localized(languages=['ko', 'de'])
+)
+```
+
 ### Specifying resource versions
 
 As explained on the [EVE Developers Blog](https://developers.eveonline.com/blog/article/breaking-changes-and-you), it's best practice to call a specific version of the resource and allow the ESI router to map it to the correct route, being `legacy`, `latest` or `dev`.
@@ -282,7 +317,7 @@ CELERYBEAT_SCHEDULE = {
 
 Recommended intervals are four hours for callback redirect cleanup and daily for token cleanup (token cleanup can get quite slow with a large database, so adjust as needed). If your app does not require background token validation, it may be advantageous to not schedule the token cleanup task, instead relying on the validation check when using `@token_required` decorators or adding `.require_valid()` to the end of a query.
 
-## Advanced Use
+## Advanced Features
 
 ### Using a local spec file
 
@@ -357,6 +392,12 @@ esi = EsiClientProvider(datasource='tranquility')
 ```
 
 Currently the only available data source is `tranquility`, which is also the default The previously available datasource `singularity` is no longer available.
+
+## Settings
+
+Here is a list of available settings for this app. They can be configured by adding them to your Django settings file.
+
+Please see the file `app_settings.py` for a list of all settings.
 
 ## History of this app
 
