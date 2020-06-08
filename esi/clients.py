@@ -2,15 +2,18 @@ from datetime import datetime
 from hashlib import md5
 import json
 import logging
+from time import sleep
 from urllib import parse as urlparse
 
 from bravado.client import SwaggerClient
 from bravado import requests_client
-from bravado.exception import HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
+from bravado.exception import (
+    HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
+)
 from bravado.swagger_model import Loader
 from bravado.http_future import HttpFuture
 from bravado_core.spec import Spec, CONFIG_DEFAULTS
-from requests.exceptions import ConnectionError
+from requests.adapters import HTTPAdapter
 
 from django.core.cache import cache
 
@@ -20,25 +23,26 @@ from . import app_settings
 
 logger = logging.getLogger(__name__)
 
+_LIBRARIES_LOG_LEVEL = logging.getLevelName(app_settings.ESI_LOG_LEVEL_LIBRARIES)
+logging.getLogger('swagger_spec_validator').setLevel(_LIBRARIES_LOG_LEVEL)
+logging.getLogger('bravado_core').setLevel(_LIBRARIES_LOG_LEVEL)
+logging.getLogger('urllib3').setLevel(_LIBRARIES_LOG_LEVEL)
+logging.getLogger('bravado').setLevel(_LIBRARIES_LOG_LEVEL)
+
 SPEC_CONFIG = {'use_models': False}
-MAX_RETRIES = 3
+RETRY_SLEEP_SECS = 1
 
 
 class CachingHttpFuture(HttpFuture):
     """
     Used to add caching to certain HTTP requests according to "Expires" header
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.cache_key = self._build_cache_key(self.future.request)
-
-    @staticmethod
-    def _build_cache_key(request):
+    """    
+    def _cache_key(self):
         """
-        Generated the key name used to cache responses
-        :param request: request used to retrieve API response
+        Generated the key name used to cache responses        
         :return: formatted cache name
         """
+        request = self.future.request
         str_hash = md5(
             (
                 request.method 
@@ -84,8 +88,7 @@ class CachingHttpFuture(HttpFuture):
            
             # loop all pages and add data to output array
             while current_page <= total_pages:  
-                self.future.request.params["page"] = current_page
-                self.cache_key = self._build_cache_key(self.future.request)
+                self.future.request.params["page"] = current_page                
                 # will use cache if applicable
                 result, headers = self.result(**kwargs)
                 total_pages = int(headers.headers['X-Pages'])  
@@ -104,6 +107,29 @@ class CachingHttpFuture(HttpFuture):
         else:
             return results
 
+    def results_localized(self, languages: list = None, **kwargs) -> dict:
+        """Executes the request and returns the response from ESI for all default
+        languages and pages (if any). This method returns a dict of all responses 
+        with the language code as keys.
+
+        Optional parameters:
+        - languages: list of languages to return instead of all default languages
+        - timeout: timeout for request to ESI in seconds, overwrites default
+        """
+        if not languages:
+            my_languages = list(app_settings.ESI_LANGUAGES)
+        else:
+            my_languages = []
+            for lang in dict.fromkeys(languages):
+                if lang not in app_settings.ESI_LANGUAGES:
+                    raise ValueError('Invalid language code: %s' % lang)
+                my_languages.append(lang)
+        
+        return {
+            language: self.results(language=language, **kwargs) 
+            for language in my_languages
+        }
+
     def result(self, **kwargs):
         """Executes the request and returns the response from ESI. Response will
         include the requested / first page only if there are more pages available.
@@ -111,23 +137,26 @@ class CachingHttpFuture(HttpFuture):
         Optional parameters:
         - timeout: timeout for request to ESI in seconds, overwrites default
         """
+        if 'language' in kwargs.keys():
+            # this parameter is not supported by bravado, so we can't pass it on
+            self.future.request.params['language'] = str(kwargs.pop('language'))
+            
         if 'timeout' not in kwargs:
-            kwargs['timeout'] = app_settings.ESI_REQUESTS_DEFAULT_TIMEOUT
+            kwargs['timeout'] = (
+                app_settings.ESI_REQUESTS_CONNECT_TIMEOUT,
+                app_settings.ESI_REQUESTS_READ_TIMEOUT
+            )
+        
         if (
             app_settings.ESI_CACHE_RESPONSE 
             and self.future.request.method == 'GET' 
             and self.operation is not None
-        ):
-            #
-            # Only cache if all are true:
-            # - settings dictate caching
-            # - it's a http get request
-            # - it's to a swagger api endpoint
-            #             
-            cached = cache.get(self.cache_key)
+        ):           
+            cache_key = self._cache_key()
+            cached = cache.get(cache_key)
             if cached:
                 result, response = cached
-                expiry = self._time_to_expiry(response.headers['Expires'])
+                expiry = self._time_to_expiry(str(response.headers['Expires']))
                 if expiry < 0:
                     logger.warning(
                         "cache expired by %d seconds, Forcing expiry", expiry
@@ -138,25 +167,56 @@ class CachingHttpFuture(HttpFuture):
                 # preserve original value
                 _also_return_response = self.request_config.also_return_response  
                 # override to always get the raw response for expiry header
-                self.request_config.also_return_response = True  
+                self.request_config.also_return_response = True
+                
                 retries = 1
-                while retries <= MAX_RETRIES:
+                max_retries = app_settings.ESI_SERVER_ERROR_MAX_RETRIES
+                while retries <= max_retries:
                     try:
+                        if app_settings.ESI_INFO_LOGGING_ENABLED:
+                            params = self.future.request.params
+                            logger.info(
+                                'Fetching from ESI: %s%s%s',
+                                self.future.request.url,
+                                f' - language {params["language"]}' 
+                                if 'language' in params else '',
+                                f' - page {params["page"]}' 
+                                if 'page' in params else ''
+                            )
+                        logger.debug(
+                            'ESI request: %s - %s',
+                            self.future.request.url,
+                            self.future.request.params
+                        )
+                        logger.debug(
+                            'ESI request headers: %s', self.future.request.headers
+                        )
                         result, response = super().result(**kwargs)
+                        logger.debug(
+                            'ESI response status code: %s', response.status_code
+                        )
+                        logger.debug('ESI response headers: %s', response.headers)
+                        logger.debug('ESI response content: %s', response.text)
                         break
                     except (
-                        HTTPBadGateway, 
-                        HTTPGatewayTimeout, 
-                        HTTPServiceUnavailable, 
-                        ConnectionError
-                    ) as e:
-                        if retries < MAX_RETRIES:
+                        HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
+                    ) as ex:
+                        if retries < max_retries:
                             logger.warning(
-                                "ESI error (Retry: %d/%d)", retries, MAX_RETRIES
+                                "ESI error (Retry: %d/%d)", 
+                                retries, 
+                                max_retries,
+                                exc_info=True
                             )
+                            if retries > 1:
+                                wait_secs = (
+                                    app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR 
+                                    * (2 ** (retries - 1))
+                                )
+                                sleep(wait_secs)
                             retries += 1
                         else:
-                            raise e
+                            raise ex
                 
                 # restore original value
                 self.request_config.also_return_response = _also_return_response  
@@ -164,7 +224,7 @@ class CachingHttpFuture(HttpFuture):
                 if 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
                     if expires > 0:
-                        cache.set(self.cache_key, (result, response), expires)
+                        cache.set(cache_key, (result, response), expires)
 
             if self.request_config.also_return_response:
                 return result, response
@@ -219,7 +279,9 @@ def cache_spec(name, spec):
     :param spec: Spec dict
     :return: True if cached
     """
-    return cache.set(build_cache_name(name), spec, app_settings.ESI_SPEC_CACHE_DURATION)
+    return cache.set(
+        build_cache_name(name), spec, app_settings.ESI_SPEC_CACHE_DURATION
+    )
 
 
 def build_spec_url(spec_version):
@@ -311,10 +373,16 @@ def esi_client_factory(
     If a spec_file is specified, specific versioning is not available. 
     Meaning the version and resource version kwargs
     are ignored in favour of the versions available in the spec_file.
-    """
-
+    """    
+    if app_settings.ESI_INFO_LOGGING_ENABLED:
+        logger.info('Generating an ESI client...')
     client = requests_client.RequestsClient()
-
+    my_http_adapter = HTTPAdapter(
+        pool_maxsize=app_settings.ESI_CONNECTION_POOL_MAXSIZE, 
+        max_retries=app_settings.ESI_CONNECTION_ERROR_MAX_RETRIES
+    )
+    client.session.mount('https://', my_http_adapter)
+    
     if token or datasource:
         client.authenticator = TokenAuthenticator(token=token, datasource=datasource)
 

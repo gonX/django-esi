@@ -7,7 +7,7 @@ import json
 import bravado
 from bravado_core.spec import Spec
 from bravado.requests_client import RequestsClient
-from requests.exceptions import ConnectionError
+from bravado.exception import HTTPBadGateway
 
 import django
 from django.contrib.auth.models import User
@@ -16,8 +16,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from . import _generate_token, _store_as_Token, _set_logger
-from ..clients import (
-    MAX_RETRIES, 
+from ..clients import (    
     EsiClientProvider, 
     esi_client_factory, 
     TokenAuthenticator, 
@@ -33,7 +32,7 @@ from ..clients import (
 )
 from ..errors import TokenExpiredError
 
-SWAGGER_SPEC_PATH = os.path.join(
+SWAGGER_SPEC_PATH_MINIMAL = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'test_swagger.json'
 )
 SWAGGER_SPEC_PATH_FULL = os.path.join(
@@ -44,16 +43,22 @@ MODULE_PATH = 'esi.clients'
 _set_logger(logging.getLogger(MODULE_PATH), __file__)
 
 
+def my_sleep(value):
+    """mock function for sleep that also checks for valid values"""
+    if value < 0:
+        raise ValueError('sleep length must be non-negative')
+
+
 class TestClientCache(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH)
+        cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
 
     @patch.object(django.core.cache.cache, 'set')
     @patch.object(django.core.cache.cache, 'get')
     @patch.object(bravado.http_future.HttpFuture, 'result')
-    def test_cache_expire(self, result_hit, cache_hit, cache_set):
+    def test_cache_expire(self, mock_future_result, mock_cache_get, mock_cache_set):
         cache.clear()
 
         class MockResultFuture:
@@ -61,6 +66,8 @@ class TestClientCache(TestCase):
                 dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
                     + timedelta(seconds=60)
                 self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
+                self.status_code = 200
+                self.text = 'dummy'
 
         class MockResultPast:
             def __init__(self):
@@ -68,19 +75,19 @@ class TestClientCache(TestCase):
                     - timedelta(seconds=60)
                 self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
 
-        result_hit.return_value = ({'players': 500}, MockResultFuture())
-        cache_hit.return_value = False
+        mock_future_result.return_value = ({'players': 500}, MockResultFuture())
+        mock_cache_get.return_value = False
 
         # hit api
         r = self.c.Status.get_status().result()
         self.assertEquals(r['players'], 500)
 
-        cache_hit.return_value = ({'players': 50}, MockResultFuture())
+        mock_cache_get.return_value = ({'players': 50}, MockResultFuture())
         # hit cache and pass
         r = self.c.Status.get_status().result()
         self.assertEquals(r['players'], 50)
 
-        cache_hit.return_value = ({'players': 50}, MockResultPast())
+        mock_cache_get.return_value = ({'players': 50}, MockResultPast())
         # hit cache fail, re-hit api
         r = self.c.Status.get_status().result()
         self.assertEquals(r['players'], 500)
@@ -172,8 +179,8 @@ class TestModuleFunctions(TestCase):
     
     @classmethod
     def setUpClass(cls):        
-        super(TestModuleFunctions, cls).setUpClass()        
-        with open(SWAGGER_SPEC_PATH, 'r', encoding='utf-8') as f:
+        super().setUpClass()        
+        with open(SWAGGER_SPEC_PATH_MINIMAL, 'r', encoding='utf-8') as f:
             cls.test_spec_dict = json.load(f)
 
     def test_build_cache_name(self):
@@ -249,7 +256,7 @@ class TestModuleFunctions(TestCase):
         mock_http_client.request.return_value.result.return_value\
             .json.return_value = self.test_spec_dict
 
-        client = read_spec(SWAGGER_SPEC_PATH)
+        client = read_spec(SWAGGER_SPEC_PATH_MINIMAL)
         self.assertIsInstance(client, SwaggerClient)
 
     def test_minimize_spec_defaults(self):
@@ -264,13 +271,13 @@ class TestModuleFunctions(TestCase):
 
 
 @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
-@patch(MODULE_PATH + '.requests_client.RequestsClient', spec=True)
+@patch(MODULE_PATH + '.requests_client.RequestsClient')
 class TestEsiClientFactory(TestCase):
     
     @classmethod
     def setUpClass(cls):        
-        super(TestEsiClientFactory, cls).setUpClass()        
-        with open(SWAGGER_SPEC_PATH, 'r', encoding='utf-8') as f:
+        super().setUpClass()        
+        with open(SWAGGER_SPEC_PATH_MINIMAL, 'r', encoding='utf-8') as f:
             cls.test_spec_dict = json.load(f)
 
     def setUp(self):        
@@ -289,7 +296,7 @@ class TestEsiClientFactory(TestCase):
             self.user
         )        
     
-    def test_minimal_client(self, mock_RequestsClient):
+    def test_minimal_client(self, mock_RequestsClient):        
         mock_RequestsClient.return_value.request.return_value.\
             result.return_value.json.return_value = self.test_spec_dict
         client = esi_client_factory()
@@ -316,7 +323,7 @@ class TestEsiClientFactory(TestCase):
     def test_client_with_spec_file(self, mock_RequestsClient):
         mock_RequestsClient.return_value.request.return_value.\
             result.return_value.json.return_value = self.test_spec_dict
-        client = esi_client_factory(spec_file=SWAGGER_SPEC_PATH)
+        client = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
         self.assertIsInstance(client, SwaggerClient)
 
     def test_client_with_explicit_resource(self, mock_RequestsClient):
@@ -335,34 +342,54 @@ class TestClientResult(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH)
+        cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
 
-    @patch(MODULE_PATH + '.app_settings.ESI_REQUESTS_DEFAULT_TIMEOUT', 99)
+    @patch(MODULE_PATH + '.app_settings.ESI_REQUESTS_CONNECT_TIMEOUT', 10)
+    @patch(MODULE_PATH + '.app_settings.ESI_REQUESTS_READ_TIMEOUT', 60)
     def test_use_default_timeout(self, mock_future_result):
         mock_future_result.return_value = (None, Mock(**{'headers': {}}))
         self.c.Status.get_status().result()
         self.assertTrue(mock_future_result.called)
         args, kwargs = mock_future_result.call_args
-        self.assertEqual(kwargs['timeout'], 99)
+        self.assertEqual(kwargs['timeout'], (10, 60))
 
-    @patch(MODULE_PATH + '.app_settings.ESI_REQUESTS_DEFAULT_TIMEOUT', 99)
+    @patch(MODULE_PATH + '.app_settings.ESI_REQUESTS_CONNECT_TIMEOUT', 10)
+    @patch(MODULE_PATH + '.app_settings.ESI_REQUESTS_READ_TIMEOUT', 60)
     def test_use_custom_timeout(self, mock_future_result):
         mock_future_result.return_value = (None, Mock(**{'headers': {}}))
         self.c.Status.get_status().result(timeout=42)
         self.assertTrue(mock_future_result.called)
         args, kwargs = mock_future_result.call_args
         self.assertEqual(kwargs['timeout'], 42)
-
-    def test_retry(self, mock_future_result):
-        mock_future_result.side_effect = ConnectionError()
+    
+    def test_support_language_parameter(self, mock_future_result):
+        mock_future_result.return_value = (None, Mock(**{'headers': {}}))        
+        my_language = 'de'
+        operation = self.c.Status.get_status()
+        operation.result(language=my_language)
+        self.assertTrue(mock_future_result.called)        
+        self.assertEqual(operation.future.request.params['language'], my_language)
+        args, kwargs = mock_future_result.call_args
+        self.assertNotIn('language', kwargs)
+    
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retry(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
         try:
             self.c.Status.get_status().result()
-        except ConnectionError as e:
+        except HTTPBadGateway as e:
             # requests error thrown
-            self.assertIsInstance(e, ConnectionError)  
+            self.assertIsInstance(e, HTTPBadGateway)  
             # we tried # times before raising
-            self.assertEqual(mock_future_result.call_count, MAX_RETRIES)  
-    
+            self.assertEqual(mock_future_result.call_count, 4)
+            call_list = mock_sleep.call_args_list
+            result = [args[0] for args, kwargs in [x for x in call_list]]
+            expected = [1.0, 2.0]
+            self.assertListEqual(expected, result)
+        
 
 @patch(MODULE_PATH + '.HttpFuture.result')
 class TestClientResultAllPages(TestCase):
@@ -371,41 +398,90 @@ class TestClientResultAllPages(TestCase):
     def setUpTestData(cls):
         cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_FULL)
 
-    def test_pages(self, request_hit):
+    def test_pages(self, mock_future_result):
 
         class MockResultHeaders:
             def __init__(self):
                 self.headers = {'X-Pages': 10}
+                self.status_code = 200
+                self.text = 'dummy'
 
-        request_hit.return_value = ({"contract_test": 1}, MockResultHeaders())
+        mock_future_result.return_value = ({"contract_test": 1}, MockResultHeaders())
         self.c.Contracts.get_contracts_public_region_id(region_id=1).results()
-        self.assertEqual(request_hit.call_count, 10)  # we got 10 pages of data
+        self.assertEqual(mock_future_result.call_count, 10)  # we got 10 pages of data
     
-    def test_pages_response(self, request_hit):
+    def test_pages_response(self, mock_future_result):
 
         class MockResultHeaders:
             def __init__(self):
                 self.headers = {'X-Pages': 10}
+                self.status_code = 200
+                self.text = 'dummy'
 
-        request_hit.return_value = ({"contract_test": 1}, MockResultHeaders())
+        mock_future_result.return_value = ({"contract_test": 1}, MockResultHeaders())
         o = self.c.Contracts.get_contracts_public_region_id(region_id=1)
         o.request_config.also_return_response = True
         result, response = o.results()
-        self.assertEqual(request_hit.call_count, 10)  # we got 10 pages of data
+        self.assertEqual(mock_future_result.call_count, 10)  # we got 10 pages of data
         self.assertEqual(len(result), 10)   # we got 10 lots of data
         self.assertEqual(response.headers, {'X-Pages': 10})  # we got header of data
 
-    def test_pages_on_non_paged_endpoint(self, request_hit):
+    def test_pages_on_non_paged_endpoint(self, mock_future_result):
 
         class MockResultHeaders:
             def __init__(self):
                 self.headers = {'header_test': "ok"}
+                self.status_code = 200
+                self.text = 'dummy'
 
-        request_hit.return_value = ({"status_test": 1}, MockResultHeaders())
+        mock_future_result.return_value = ({"status_test": 1}, MockResultHeaders())
 
         self.c.Status.get_status().results()
-        self.assertEqual(request_hit.call_count, 1)     # we got no pages of data
+        self.assertEqual(mock_future_result.call_count, 1)     # we got no pages of data
 
+
+@patch(MODULE_PATH + '.app_settings.ESI_LANGUAGES', ['lang1', 'lang2', 'lang3'])
+@patch(MODULE_PATH + '.CachingHttpFuture.results')
+class TestClientResultsLocalized(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
+    
+    @staticmethod
+    def my_results(**kwargs):
+        if 'language' in kwargs:
+            return 'response_' + kwargs['language']
+        else:
+            return ''
+
+    def test_default(self, mock_future_results):
+        mock_future_results.side_effect = self.my_results
+        result = self.c.Status.get_status().results_localized()
+        expected = {
+            'lang1': 'response_lang1',
+            'lang2': 'response_lang2',
+            'lang3': 'response_lang3',
+        }
+        self.assertDictEqual(result, expected)
+
+    def test_custom_languages(self, mock_future_results):
+        mock_future_results.side_effect = self.my_results
+        result = (
+            self.c.Status.get_status().results_localized(languages=['lang2', 'lang3'])
+        )
+        expected = {
+            'lang2': 'response_lang2',
+            'lang3': 'response_lang3',
+        }
+        self.assertDictEqual(result, expected)
+
+    def test_raise_on_invalid_language(self, mock_future_results):
+        mock_future_results.side_effect = self.my_results
+        
+        with self.assertRaises(ValueError):
+            self.c.Status.get_status().results_localized(languages=['lang2', 'xxx'])
+        
 
 @patch(MODULE_PATH + '.esi_client_factory')
 class TestEsiClientProvider(TestCase):    
