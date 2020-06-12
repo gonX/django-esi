@@ -6,7 +6,6 @@ from requests_oauthlib import OAuth2Session
 
 from django.db import models
 from django.utils import timezone
-from django.utils.six import string_types
 
 from .errors import TokenError, IncompleteResponseError
 from . import app_settings
@@ -23,7 +22,7 @@ def _process_scopes(scopes):
         # support a single space-delimited string inside a list because :users:
         scopes = scopes[0]
     # support space-delimited string scopes or lists
-    if isinstance(scopes, string_types):
+    if isinstance(scopes, str):
         scopes = set(scopes.split())
     return set(str(s) for s in scopes)
 

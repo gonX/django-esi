@@ -3,7 +3,6 @@ import logging
 from requests_oauthlib import OAuth2Session
 
 from django.shortcuts import redirect, get_object_or_404, render
-from django.utils.six import string_types
 from django.urls import reverse
 from django.http.response import HttpResponseBadRequest
 
@@ -28,7 +27,7 @@ def sso_redirect(request, scopes=None, return_to=None):
     )
     if scopes is None:
         scopes = list()
-    elif isinstance(scopes, string_types):
+    elif isinstance(scopes, str):
         scopes = list([scopes])
 
     # ensure only one callback redirect model per session
