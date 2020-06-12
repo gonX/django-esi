@@ -1,7 +1,6 @@
 import logging
 from functools import wraps
 
-from django.utils.decorators import available_attrs
 from .models import Token, CallbackRedirect
 
 
@@ -45,7 +44,7 @@ def tokens_required(scopes='', new=False):
     """
 
     def decorator(view_func):
-        @wraps(view_func, assigned=available_attrs(view_func))
+        @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
 
             # if we're coming back from SSO for a new token, return it
@@ -103,7 +102,7 @@ def token_required(scopes='', new=False):
     """
 
     def decorator(view_func):
-        @wraps(view_func, assigned=available_attrs(view_func))
+        @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
 
             # if we're coming back from SSO for a new token, return it
@@ -199,7 +198,7 @@ def single_use_token(scopes='', new=False):
     """
 
     def decorator(view_func):
-        @wraps(view_func, assigned=available_attrs(view_func))
+        @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
 
             # if we're coming back from SSO for a new token, return it
