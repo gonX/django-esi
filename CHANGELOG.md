@@ -7,9 +7,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+## [2.0.0] - tbd
+
+### Added
+
+- New approach for creating a client that prevents memory leaks and is faster. (See also `EsiClientProvider`)
+- New "result" method `results()` that automatically handles paging of the response
+- New "result" method `results_localized()` that automatically returns the response in all supported languages and with paging
+- New Token method `valid_access_token()` to directly get a valid access token
+- Automatic retries on common HTTP and connection errors
+- Default timeouts for all connections
+- Option for increasing the connection pool to enable many parallel requests
+- (optional) info and debug logging
+
 ### Changed
 
 - Dropped support for Python 3.5. Django-esi now requires Python 3.6 or higher.
+- Breaking change: The approach for getting the full response from ESI has changed. (See also section "Advanced Usage"):
+  - Before: `operation.also_return_response = True`.
+  - Now: `operation.request_config.also_return_response = True`
+
+### Fixed
+
+- Several bugfixes and performance improvements
 
 ## [1.6.1] - 2020-04-15
 
