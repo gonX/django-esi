@@ -348,7 +348,7 @@ def read_spec(path, http_client=None):
     :param http_client: :class:`bravado.requests_client.RequestsClient`
     :return: :class:`bravado_core.spec.Spec`
     """
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         spec_dict = json.loads(f.read())
 
     return SwaggerClient.from_spec(
