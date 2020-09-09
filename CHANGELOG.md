@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+## [2.0.1] - 2020-09-09
+
+### Fixed
+
+- Fails with "UnicodeDecodeError" if a system's default encoding is not UTF-8
+
 ## [2.0.0] - 2020-06-28
 
 ### Added
