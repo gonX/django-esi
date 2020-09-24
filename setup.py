@@ -15,7 +15,7 @@ setup(
     install_requires=[
         'requests>=2.9.1,<3.0',
         'requests_oauthlib>=0.8.0,<2.0',
-        'django>=2.0',
+        'django>=2.2,<4',
         'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
     ],
@@ -32,6 +32,8 @@ setup(
         'Environment :: Web Environment',
         'Framework :: Django',        
         'Framework :: Django :: 2.2',
+        'Framework :: Django :: 3.0',
+        'Framework :: Django :: 3.1',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
