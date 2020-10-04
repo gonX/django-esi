@@ -1,5 +1,5 @@
 {% load static %}
-
+{% load scope_tags %}
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -22,7 +22,7 @@
                     <div class="card text-white bg-secondary">
                         <div class="card-header text-center">Scopes Requested</div>
                         <div class="card-body align-middle text-center">
-                            {% for scope in scopes %}<span class="badge badge-dark">{{scope}}</span> {% endfor %}
+                            {% for scope in scopes %}<span class="badge badge-dark">{{ scope|scope_friendly_name }}</span> {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -67,7 +67,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="_token" value="{{ token.pk }}">
                             <button class="btn btn-success" type="submit" title="Select" formmethod="post">
-                                Use This Character
+                                Select This Character
                             </button>
                     </div>
                 </div>

@@ -32,10 +32,17 @@ class TestScope(TestCase):
             str(x)
         )
     
-    def test_friendly_name(self):
+    def test_friendly_name_fail(self):
         x = Scope(name='dummy_scope')
         self.assertEqual(
             "dummy_scope",
+            x.friendly_name
+        )
+
+    def test_friendly_name_pass(self):
+        x = Scope(name='test.dummy_scope.test')
+        self.assertEqual(
+            "dummy scope",
             x.friendly_name
         )
 
