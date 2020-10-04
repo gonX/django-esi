@@ -106,8 +106,10 @@ def select_token(request, scopes='', new=False):
 
     @tokens_required(scopes=scopes, new=new)
     def _token_list(r, tokens):
+
         context = {
             'tokens': tokens,
+            'scopes': scopes
         }
         return render(r, 'esi/select_token.html', context=context)
 
