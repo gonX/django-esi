@@ -21,35 +21,43 @@
                 <div class="col-lg-8 offset-lg-2" style="padding-left: 0 !important; padding-right: 0 !important;">
                     <div class="card text-white bg-secondary">
                         <div class="card-header text-center">Scopes Requested</div>
-                        <div class="card-body text-center">
+                        <div class="card-body align-middle text-center">
                             {% for scope in scopes %}<span class="badge badge-dark">{{scope}}</span> {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
             <br>
-            <div class="mt-2">
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="_add" value="True">
-                    <div class="text-center">
-                        <a href="#" type="submit">
-                            <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Large_Black.png'%}"
-                                   alt="Add Token">
-                        </a>
-                    </div>
-                </form>
-            </div>
-            <br>
             <div class="col-lg-8 offset-lg-2 container" style="padding-left: 0 !important; padding-right: 0 !important;">
                 <div class="d-flex flex-wrap justify-content-center">
-
+                {% if tokens|length > 15 %}
+                    <form method="post">
+                        <div class="card text-white bg-secondary m-2">
+                            <div class="card-header text-center">New Character</div>
+                            <div class="card-body text-center">
+                                <img class="ra-avatar img-responsive"
+                                    src="https://images.evetech.net/characters/1/portrait?size=128">
+        
+                                    
+                            </div>
+                            <div class="card-footer">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="_add" value="True">
+                                    <a href="#" type="submit" class="m-1">
+                                        <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Small_Black.png'%}"
+                                               alt="Add Token">
+                                    </a>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+    
                 {% for token in tokens %}
                 <form method="post">
 
                 <div class="card text-white bg-secondary m-2">
                     <div class="card-header text-center">{{token.character_name}}</div>
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <img class="ra-avatar img-responsive"
                             src="https://images.evetech.net/characters/{{ token.character_id }}/portrait?size=128">
 
@@ -59,13 +67,33 @@
                             {% csrf_token %}
                             <input type="hidden" name="_token" value="{{ token.pk }}">
                             <button class="btn btn-success" type="submit" title="Select" formmethod="post">
-                                Use This Token
+                                Use This Character
                             </button>
                     </div>
                 </div>
                 </form>
 
                 {% endfor %}
+                <form method="post">
+                    <div class="card text-white bg-secondary m-2">
+                        <div class="card-header text-center">New Character</div>
+                        <div class="card-body text-center">
+                            <img class="ra-avatar img-responsive"
+                                src="https://images.evetech.net/characters/1/portrait?size=128">
+    
+                                
+                        </div>
+                        <div class="card-footer">
+                                {% csrf_token %}
+                                <input type="hidden" name="_add" value="True">
+                                <a href="#" type="submit" class="m-1">
+                                    <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Small_Black.png'%}"
+                                           alt="Add Token">
+                                </a>
+                        </div>
+                    </div>
+                </form>
+
                 </div>  
             </div>
         </div>
