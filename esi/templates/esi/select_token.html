@@ -13,12 +13,35 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous" />
+
+        <style>
+            .character-image{
+                width: 110px;
+                height: auto;
+            }             
+
+            @media (min-width: 550px) {
+                .character-image {
+                    width: 175px;
+                }
+            }
+            /* sm */
+            @media (min-width: 768px) {
+                .character-image {
+                    width: 210px;
+                }
+                .sso-card{
+                    width: auto;
+                }
+
+            }
+        </style>
     </head>
     <body class="bg-dark">
         <div class="container-fluid mt-5">
 
             <div class="mt-2">
-                <div class="col-lg-8 offset-lg-2" style="padding-left: 0 !important; padding-right: 0 !important;">
+                <div class="col-lg-10 offset-lg-1 col-md-12" style="padding-left: 0 !important; padding-right: 0 !important;">
                     <div class="card text-white bg-secondary">
                         <div class="card-header text-center">Scopes Requested</div>
                         <div class="card-body align-middle text-center">
@@ -28,15 +51,16 @@
                 </div>
             </div>
             <br>
-            <div class="col-lg-8 offset-lg-2 container" style="padding-left: 0 !important; padding-right: 0 !important;">
+
+            <div class="col-lg-10 offset-lg-1 col-md-12 container" style="padding-left: 0 !important; padding-right: 0 !important;">
                 <div class="d-flex flex-wrap justify-content-center">
-                {% if tokens|length > 15 %}
+                {% if tokens|length > 14 %}
                     <form method="post">
-                        <div class="card text-white bg-secondary m-2">
+                        <div class="card text-white bg-secondary m-2 sso-card">
                             <div class="card-header text-center">New Character</div>
-                            <div class="card-body text-center">
-                                <img class="ra-avatar img-responsive"
-                                    src="https://images.evetech.net/characters/1/portrait?size=128">
+                            <div class="card-body text-center  d-none d-sm-block">
+                                <img class=" ra-avatar img-responsive character-image rounded-lg"
+                                    src="https://images.evetech.net/characters/1/portrait?size=256">
         
                                     
                             </div>
@@ -55,31 +79,31 @@
                 {% for token in tokens %}
                 <form method="post">
 
-                <div class="card text-white bg-secondary m-2">
+                <div class="card text-white bg-secondary m-2 mw-50">
                     <div class="card-header text-center">{{ token.character_name }}</div>
-                    <div class="card-body text-center">
-                        <img class="ra-avatar img-responsive"
-                            src="https://images.evetech.net/characters/{{ token.character_id }}/portrait?size=128">
+                    <div class="card-body text-center ">
+                        <img class="ra-avatar img-responsive character-image rounded-lg"
+                            src="https://images.evetech.net/characters/{{ token.character_id }}/portrait?size=256">
 
                             
                     </div>
                     <div class="card-footer">
                             {% csrf_token %}
                             <input type="hidden" name="_token" value="{{ token.pk }}">
-                            <button class="btn btn-success" type="submit" title="Select" formmethod="post">
-                                Select This Character
+                            <button class="btn btn-success w-100" type="submit" title="Select" formmethod="post">
+                                Select
                             </button>
                     </div>
                 </div>
                 </form>
 
                 {% endfor %}
-                <form method="post">
-                    <div class="card text-white bg-secondary m-2">
+                <form method="post"> 
+                    <div class="card text-white bg-secondary m-2 sso-card">
                         <div class="card-header text-center">New Character</div>
-                        <div class="card-body text-center">
-                            <img class="ra-avatar img-responsive"
-                                src="https://images.evetech.net/characters/1/portrait?size=128">
+                        <div class="card-body text-center  d-none d-sm-block">
+                            <img class="ra-avatar img-responsive character-image rounded-lg"
+                                src="https://images.evetech.net/characters/1/portrait?size=256">
     
                                 
                         </div>
