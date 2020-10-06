@@ -136,11 +136,19 @@ class CachingHttpFuture(HttpFuture):
 
         Optional parameters:
         - timeout: timeout for request to ESI in seconds, overwrites default
+        - retries: max number of retries, overwrites default
         """
         if 'language' in kwargs.keys():
             # this parameter is not supported by bravado, so we can't pass it on
             self.future.request.params['language'] = str(kwargs.pop('language'))
-            
+
+        if 'retries' in kwargs.keys():            
+            max_retries = int(kwargs.pop('retries'))
+        else:
+            max_retries = int(app_settings.ESI_SERVER_ERROR_MAX_RETRIES)
+        
+        max_retries = max(0, max_retries)
+
         if 'timeout' not in kwargs:
             kwargs['timeout'] = (
                 app_settings.ESI_REQUESTS_CONNECT_TIMEOUT,
@@ -154,6 +162,8 @@ class CachingHttpFuture(HttpFuture):
         ):           
             cache_key = self._cache_key()
             cached = cache.get(cache_key)
+            result = None
+            response = None
             if cached:
                 result, response = cached
                 expiry = self._time_to_expiry(str(response.headers['Expires']))
@@ -169,8 +179,7 @@ class CachingHttpFuture(HttpFuture):
                 # override to always get the raw response for expiry header
                 self.request_config.also_return_response = True
                 
-                retries = 1
-                max_retries = app_settings.ESI_SERVER_ERROR_MAX_RETRIES
+                retries = 0
                 while retries <= max_retries:
                     try:
                         if app_settings.ESI_INFO_LOGGING_ENABLED:
@@ -208,7 +217,7 @@ class CachingHttpFuture(HttpFuture):
                                 max_retries,
                                 exc_info=True
                             )
-                            if retries > 1:
+                            if retries > 0:
                                 wait_secs = (
                                     app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR 
                                     * (2 ** (retries - 1))
