@@ -375,7 +375,7 @@ class TestClientResult(TestCase):
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
     @patch(MODULE_PATH + '.sleep')
-    def test_retry(self, mock_sleep, mock_future_result):
+    def test_retries_1(self, mock_sleep, mock_future_result):
         mock_sleep.side_effect = my_sleep
         mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
         try:
@@ -384,12 +384,54 @@ class TestClientResult(TestCase):
             # requests error thrown
             self.assertIsInstance(e, HTTPBadGateway)  
             # we tried # times before raising
-            self.assertEqual(mock_future_result.call_count, 4)
+            self.assertEqual(mock_future_result.call_count, 5)
             call_list = mock_sleep.call_args_list
-            result = [args[0] for args, kwargs in [x for x in call_list]]
-            expected = [1.0, 2.0]
+            result = [args[0] for args, _ in [x for x in call_list]]
+            expected = [0.5, 1.0, 2.0]
             self.assertListEqual(expected, result)
-        
+            
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 1)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retries_2(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        try:
+            self.c.Status.get_status().result()
+        except HTTPBadGateway as e:
+            # requests error thrown
+            self.assertIsInstance(e, HTTPBadGateway)  
+            # we tried # times before raising
+            self.assertEqual(mock_future_result.call_count, 2)
+
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 0)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retries_3(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        try:
+            self.c.Status.get_status().result()
+        except HTTPBadGateway as e:
+            # requests error thrown
+            self.assertIsInstance(e, HTTPBadGateway)  
+            # we tried # times before raising
+            self.assertEqual(mock_future_result.call_count, 1)
+           
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retry_with_custom_retries(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        try:
+            self.c.Status.get_status().result(retries=1)
+        except HTTPBadGateway as e:
+            # requests error thrown
+            self.assertIsInstance(e, HTTPBadGateway)  
+            # we tried # times before raising
+            self.assertEqual(mock_future_result.call_count, 2)
+            
 
 @patch(MODULE_PATH + '.HttpFuture.result')
 class TestClientResultAllPages(TestCase):
