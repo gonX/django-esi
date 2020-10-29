@@ -65,7 +65,6 @@ class Token(models.Model):
         editable=False
     )
     refresh_token = models.TextField(
-        blank=True, default='',
         help_text="A re-usable token to generate new access tokens upon expiry.",
         editable=False
     )
