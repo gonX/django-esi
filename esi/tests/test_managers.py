@@ -490,7 +490,8 @@ class TestTokenManager(TestCase):
     @patch('esi.managers.app_settings.ESI_TOKEN_VERIFY_URL', 'localhost')
     @patch('esi.managers.app_settings.ESI_ALWAYS_CREATE_TOKEN', False)
     @patch('esi.managers.OAuth2Session', autospec=True)
-    def test_create_from_code(self, mock_OAuth2Session):
+    def test_create_from_code_1(self, mock_OAuth2Session):
+        """Normal case with refresh token"""
         mock_oauth = Mock()
         mock_oauth.request.return_value.json.return_value = \
             _generate_token(
@@ -504,6 +505,49 @@ class TestTokenManager(TestCase):
         mock_oauth.fetch_token.return_value = {
             'access_token': 'access_token',
             'refresh_token': 'refresh_token',
+            'token_type': 'Bearer',
+            'expires_in': 1200,
+        }
+        mock_OAuth2Session.return_value = mock_oauth
+
+        # create new token from code
+        token1 = Token.objects.create_from_code('abc123xyz')
+        self.assertEqual(
+            token1.character_id,
+            99
+        )
+        self.assertEqual(
+            token1.character_name,
+            'Bruce Wayne'
+        )
+
+        # should return existing token instead of creating a new one
+        # since ESI_ALWAYS_CREATE_TOKEN is False
+        token2 = Token.objects.create_from_code('11abc123xyz')
+        self.assertEqual(token1, token2)
+
+    @patch('esi.managers.app_settings.ESI_SSO_CLIENT_ID', 'abc')
+    @patch('esi.managers.app_settings.ESI_SSO_CLIENT_SECRET', 'xyz')
+    @patch('esi.managers.app_settings.ESI_SSO_CALLBACK_URL', 'localhost')
+    @patch('esi.managers.app_settings.ESI_TOKEN_URL', 'localhost')
+    @patch('esi.managers.app_settings.ESI_TOKEN_VERIFY_URL', 'localhost')
+    @patch('esi.managers.app_settings.ESI_ALWAYS_CREATE_TOKEN', False)
+    @patch('esi.managers.OAuth2Session', autospec=True)
+    def test_create_from_code_2(self, mock_OAuth2Session):
+        """Special case w/o refresh token"""
+        mock_oauth = Mock()
+        mock_oauth.request.return_value.json.return_value = \
+            _generate_token(
+                99, 'Bruce Wayne', scopes=[
+                    'esi-calendar.read_calendar_events.v1',
+                    'esi-location.read_location.v1', 
+                    'esi-location.read_ship_type.v1',
+                    'esi-unknown-scope'
+                ]
+            )
+        mock_oauth.fetch_token.return_value = {
+            'access_token': 'access_token',
+            'refresh_token': None,
             'token_type': 'Bearer',
             'expires_in': 1200,
         }

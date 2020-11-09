@@ -98,14 +98,16 @@ Finally restart your Django application, e.g. by restarting your supervisors.
 
 ## Usage in views
 
+### Single token
+
 When views require a token, wrap with the `token_required` decorator and accept a `token` arg:
 
 ```python
 from esi.decorators import token_required
 
-@token_required()
+@token_required(scopes="esi-characters.read_medals.v1")
 def my_view(request, token):
-    ...
+    # my code
 ```
 
 This will prompt the user to either select a token from their current ones, or if none exist create a new one via SSO.
@@ -117,11 +119,15 @@ To specify scopes, add either a list of names or a space-delimited string:
 @token_required(scopes='esi-location.read_ship_type.v1 esi-location.read_location.v1')
 ```
 
+### New token
+
 To require a new token, such as for logging in, add the `new` argument:
 
 ```python
 @token_required(new=True)
 ```
+
+### Multiple tokens
 
 To request all of a user's tokens which have the required scopes, wrap instead with the `tokens_required` decorator and accept a `tokens` arg:
 
@@ -133,7 +139,9 @@ def my_view(request, tokens):
 
 This skips prompting for token selection and instead passes that responsibility to the view. Tokens are provided as a queryset.
 
-To require a single use token regardless of login state, add the `single_use_token` decorator with the scopes required:
+### Single use token
+
+It is also possible to request a token for single use. Single use tokens do not require a user to be logged in and are only available to the current view.
 
 ```python
 from esi.decorators import single_use_token
