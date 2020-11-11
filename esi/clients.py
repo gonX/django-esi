@@ -160,13 +160,20 @@ class CachingHttpFuture(HttpFuture):
             and self.future.request.method == 'GET' 
             and self.operation is not None
         ):           
-            cache_key = self._cache_key()
-            cached = cache.get(cache_key)
             result = None
             response = None
+            cache_key = self._cache_key()
+            try:
+                cached = cache.get(cache_key)
+            except Exception:
+                cached = None
+                logger.warning(
+                    "Attempt to read ESI results from cache failed", exc_info=True
+                )
+
             if cached:
                 result, response = cached
-                expiry = self._time_to_expiry(str(response.headers['Expires']))
+                expiry = self._time_to_expiry(str(response.headers.get('Expires')))
                 if expiry < 0:
                     logger.warning(
                         "cache expired by %d seconds, Forcing expiry", expiry
@@ -230,10 +237,15 @@ class CachingHttpFuture(HttpFuture):
                 # restore original value
                 self.request_config.also_return_response = _also_return_response  
 
-                if 'Expires' in response.headers:
+                if response and 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
                     if expires > 0:
-                        cache.set(cache_key, (result, response), expires)
+                        try:
+                            cache.set(cache_key, (result, response), expires)
+                        except Exception:
+                            logger.warning(
+                                "Failed to write ESI result to cache", exc_info=True
+                            )
 
             if self.request_config.also_return_response:
                 return result, response

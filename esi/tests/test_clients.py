@@ -49,32 +49,33 @@ def my_sleep(value):
         raise ValueError('sleep length must be non-negative')
 
 
+class MockResultFuture:
+    def __init__(self):
+        dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
+            + timedelta(seconds=60)
+        self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
+        self.status_code = 200
+        self.text = 'dummy'
+
+
+class MockResultPast:
+    def __init__(self):
+        dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
+            - timedelta(seconds=60)
+        self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
+
+
+@patch.object(django.core.cache.cache, 'set')
+@patch.object(django.core.cache.cache, 'get')
+@patch.object(bravado.http_future.HttpFuture, 'result')
 class TestClientCache(TestCase):
 
     @classmethod
     def setUpTestData(cls):
         cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
 
-    @patch.object(django.core.cache.cache, 'set')
-    @patch.object(django.core.cache.cache, 'get')
-    @patch.object(bravado.http_future.HttpFuture, 'result')
     def test_cache_expire(self, mock_future_result, mock_cache_get, mock_cache_set):
         cache.clear()
-
-        class MockResultFuture:
-            def __init__(self):
-                dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
-                    + timedelta(seconds=60)
-                self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
-                self.status_code = 200
-                self.text = 'dummy'
-
-        class MockResultPast:
-            def __init__(self):
-                dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
-                    - timedelta(seconds=60)
-                self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
-
         mock_future_result.return_value = ({'players': 500}, MockResultFuture())
         mock_cache_get.return_value = False
 
@@ -92,6 +93,29 @@ class TestClientCache(TestCase):
         r = self.c.Status.get_status().result()
         self.assertEquals(r['players'], 500)
 
+    def test_can_handle_exception_from_cache_set(
+        self, mock_future_result, mock_cache_get, mock_cache_set
+    ):
+        cache.clear()
+        mock_future_result.return_value = ({'players': 500}, MockResultFuture())
+        mock_cache_get.return_value = False
+        mock_cache_set.side_effect = RuntimeError("TEST: Could not write to cache")
+
+        # hit api
+        r = self.c.Status.get_status().result()
+        self.assertEquals(r['players'], 500)
+
+    def test_can_handle_exception_from_cache_get(
+        self, mock_future_result, mock_cache_get, mock_cache_set
+    ):
+        cache.clear()
+        mock_future_result.return_value = ({'players': 500}, MockResultFuture())        
+        mock_cache_get.side_effect = RuntimeError("TEST: Could not read from cache")
+
+        # hit api
+        r = self.c.Status.get_status().result()
+        self.assertEquals(r['players'], 500)
+    
 
 @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 3)
 @patch(MODULE_PATH + '.app_settings.ESI_API_URL', 'https://www.example.com/esi/')
