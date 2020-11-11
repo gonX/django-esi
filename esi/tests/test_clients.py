@@ -49,32 +49,33 @@ def my_sleep(value):
         raise ValueError('sleep length must be non-negative')
 
 
+class MockResultFuture:
+    def __init__(self):
+        dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
+            + timedelta(seconds=60)
+        self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
+        self.status_code = 200
+        self.text = 'dummy'
+
+
+class MockResultPast:
+    def __init__(self):
+        dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
+            - timedelta(seconds=60)
+        self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
+
+
+@patch.object(django.core.cache.cache, 'set')
+@patch.object(django.core.cache.cache, 'get')
+@patch.object(bravado.http_future.HttpFuture, 'result')
 class TestClientCache(TestCase):
 
     @classmethod
     def setUpTestData(cls):
         cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
 
-    @patch.object(django.core.cache.cache, 'set')
-    @patch.object(django.core.cache.cache, 'get')
-    @patch.object(bravado.http_future.HttpFuture, 'result')
     def test_cache_expire(self, mock_future_result, mock_cache_get, mock_cache_set):
         cache.clear()
-
-        class MockResultFuture:
-            def __init__(self):
-                dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
-                    + timedelta(seconds=60)
-                self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
-                self.status_code = 200
-                self.text = 'dummy'
-
-        class MockResultPast:
-            def __init__(self):
-                dt = datetime.utcnow().replace(tzinfo=timezone.utc) \
-                    - timedelta(seconds=60)
-                self.headers = {'Expires': dt.strftime('%a, %d %b %Y %H:%M:%S %Z')}
-
         mock_future_result.return_value = ({'players': 500}, MockResultFuture())
         mock_cache_get.return_value = False
 
@@ -92,6 +93,29 @@ class TestClientCache(TestCase):
         r = self.c.Status.get_status().result()
         self.assertEquals(r['players'], 500)
 
+    def test_can_handle_exception_from_cache_set(
+        self, mock_future_result, mock_cache_get, mock_cache_set
+    ):
+        cache.clear()
+        mock_future_result.return_value = ({'players': 500}, MockResultFuture())
+        mock_cache_get.return_value = False
+        mock_cache_set.side_effect = RuntimeError("TEST: Could not write to cache")
+
+        # hit api
+        r = self.c.Status.get_status().result()
+        self.assertEquals(r['players'], 500)
+
+    def test_can_handle_exception_from_cache_get(
+        self, mock_future_result, mock_cache_get, mock_cache_set
+    ):
+        cache.clear()
+        mock_future_result.return_value = ({'players': 500}, MockResultFuture())        
+        mock_cache_get.side_effect = RuntimeError("TEST: Could not read from cache")
+
+        # hit api
+        r = self.c.Status.get_status().result()
+        self.assertEquals(r['players'], 500)
+    
 
 @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 3)
 @patch(MODULE_PATH + '.app_settings.ESI_API_URL', 'https://www.example.com/esi/')
@@ -375,7 +399,7 @@ class TestClientResult(TestCase):
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
     @patch(MODULE_PATH + '.sleep')
-    def test_retry(self, mock_sleep, mock_future_result):
+    def test_retries_1(self, mock_sleep, mock_future_result):
         mock_sleep.side_effect = my_sleep
         mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
         try:
@@ -384,12 +408,54 @@ class TestClientResult(TestCase):
             # requests error thrown
             self.assertIsInstance(e, HTTPBadGateway)  
             # we tried # times before raising
-            self.assertEqual(mock_future_result.call_count, 4)
+            self.assertEqual(mock_future_result.call_count, 5)
             call_list = mock_sleep.call_args_list
-            result = [args[0] for args, kwargs in [x for x in call_list]]
-            expected = [1.0, 2.0]
+            result = [args[0] for args, _ in [x for x in call_list]]
+            expected = [0.5, 1.0, 2.0]
             self.assertListEqual(expected, result)
-        
+            
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 1)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retries_2(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        try:
+            self.c.Status.get_status().result()
+        except HTTPBadGateway as e:
+            # requests error thrown
+            self.assertIsInstance(e, HTTPBadGateway)  
+            # we tried # times before raising
+            self.assertEqual(mock_future_result.call_count, 2)
+
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 0)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retries_3(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        try:
+            self.c.Status.get_status().result()
+        except HTTPBadGateway as e:
+            # requests error thrown
+            self.assertIsInstance(e, HTTPBadGateway)  
+            # we tried # times before raising
+            self.assertEqual(mock_future_result.call_count, 1)
+           
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
+    @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
+    @patch(MODULE_PATH + '.sleep')
+    def test_retry_with_custom_retries(self, mock_sleep, mock_future_result):
+        mock_sleep.side_effect = my_sleep
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        try:
+            self.c.Status.get_status().result(retries=1)
+        except HTTPBadGateway as e:
+            # requests error thrown
+            self.assertIsInstance(e, HTTPBadGateway)  
+            # we tried # times before raising
+            self.assertEqual(mock_future_result.call_count, 2)
+            
 
 @patch(MODULE_PATH + '.HttpFuture.result')
 class TestClientResultAllPages(TestCase):

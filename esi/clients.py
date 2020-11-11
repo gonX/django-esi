@@ -136,11 +136,19 @@ class CachingHttpFuture(HttpFuture):
 
         Optional parameters:
         - timeout: timeout for request to ESI in seconds, overwrites default
+        - retries: max number of retries, overwrites default
         """
         if 'language' in kwargs.keys():
             # this parameter is not supported by bravado, so we can't pass it on
             self.future.request.params['language'] = str(kwargs.pop('language'))
-            
+
+        if 'retries' in kwargs.keys():            
+            max_retries = int(kwargs.pop('retries'))
+        else:
+            max_retries = int(app_settings.ESI_SERVER_ERROR_MAX_RETRIES)
+        
+        max_retries = max(0, max_retries)
+
         if 'timeout' not in kwargs:
             kwargs['timeout'] = (
                 app_settings.ESI_REQUESTS_CONNECT_TIMEOUT,
@@ -152,11 +160,20 @@ class CachingHttpFuture(HttpFuture):
             and self.future.request.method == 'GET' 
             and self.operation is not None
         ):           
+            result = None
+            response = None
             cache_key = self._cache_key()
-            cached = cache.get(cache_key)
+            try:
+                cached = cache.get(cache_key)
+            except Exception:
+                cached = None
+                logger.warning(
+                    "Attempt to read ESI results from cache failed", exc_info=True
+                )
+
             if cached:
                 result, response = cached
-                expiry = self._time_to_expiry(str(response.headers['Expires']))
+                expiry = self._time_to_expiry(str(response.headers.get('Expires')))
                 if expiry < 0:
                     logger.warning(
                         "cache expired by %d seconds, Forcing expiry", expiry
@@ -169,8 +186,7 @@ class CachingHttpFuture(HttpFuture):
                 # override to always get the raw response for expiry header
                 self.request_config.also_return_response = True
                 
-                retries = 1
-                max_retries = app_settings.ESI_SERVER_ERROR_MAX_RETRIES
+                retries = 0
                 while retries <= max_retries:
                     try:
                         if app_settings.ESI_INFO_LOGGING_ENABLED:
@@ -208,7 +224,7 @@ class CachingHttpFuture(HttpFuture):
                                 max_retries,
                                 exc_info=True
                             )
-                            if retries > 1:
+                            if retries > 0:
                                 wait_secs = (
                                     app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR 
                                     * (2 ** (retries - 1))
@@ -221,10 +237,15 @@ class CachingHttpFuture(HttpFuture):
                 # restore original value
                 self.request_config.also_return_response = _also_return_response  
 
-                if 'Expires' in response.headers:
+                if response and 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
                     if expires > 0:
-                        cache.set(cache_key, (result, response), expires)
+                        try:
+                            cache.set(cache_key, (result, response), expires)
+                        except Exception:
+                            logger.warning(
+                                "Failed to write ESI result to cache", exc_info=True
+                            )
 
             if self.request_config.also_return_response:
                 return result, response
@@ -348,7 +369,7 @@ def read_spec(path, http_client=None):
     :param http_client: :class:`bravado.requests_client.RequestsClient`
     :return: :class:`bravado_core.spec.Spec`
     """
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         spec_dict = json.loads(f.read())
 
     return SwaggerClient.from_spec(

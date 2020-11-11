@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+## [2.0.2] - 2020-10-01
+
+### Fixed
+
+- Django 3.0,3.1 Support and Testing https://gitlab.com/allianceauth/django-esi/-/merge_requests/35
+- use image.evetech CDN https://gitlab.com/allianceauth/django-esi/-/merge_requests/36
+
+## [2.0.1] - 2020-09-09
+
+### Fixed
+
+- Fails with "UnicodeDecodeError" if a system's default encoding is not UTF-8
+
 ## [2.0.0] - 2020-06-28
 
 ### Added
