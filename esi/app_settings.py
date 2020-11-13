@@ -27,6 +27,10 @@ ESI_INFO_LOGGING_ENABLED = getattr(settings, 'ESI_INFO_LOGGING_ENABLED', False)
 # Set log level for libraries like bravado and urlib3
 ESI_LOG_LEVEL_LIBRARIES = str(getattr(settings, 'ESI_LOG_LEVEL_LIBRARIES', 'INFO'))
 
+# Set contact email address of server owner, 
+# which will be included in the User-Agent header of every request
+ESI_CONTACT_EMAIL = getattr(settings, 'ESI_CONTACT_EMAIL', None)
+
 # Max size of the connection pool. Increase this setting if you hav more parallel
 # threads connected to ESI at the same time.
 ESI_CONNECTION_POOL_MAXSIZE = getattr(settings, 'ESI_CONNECTION_POOL_MAXSIZE', 10)

@@ -18,7 +18,7 @@ from requests.adapters import HTTPAdapter
 from django.core.cache import cache
 
 from .errors import TokenExpiredError
-from . import app_settings
+from . import app_settings, __version__, __title__
 
 
 logger = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ class CachingHttpFuture(HttpFuture):
         Optional parameters:
         - timeout: timeout for request to ESI in seconds, overwrites default
         - retries: max number of retries, overwrites default
-        """
+        """        
         if 'language' in kwargs.keys():
             # this parameter is not supported by bravado, so we can't pass it on
             self.future.request.params['language'] = str(kwargs.pop('language'))
@@ -283,6 +283,32 @@ class TokenAuthenticator(requests_client.Authenticator):
         return request
 
 
+class RequestsClientPlus(requests_client.RequestsClient):
+    """RequestsClient with ability to set the user agent header for all requests"""
+
+    def __init__(
+        self,
+        ssl_verify=True,
+        ssl_cert=None,
+        future_adapter_class=requests_client.RequestsFutureAdapter,
+        response_adapter_class=requests_client.RequestsResponseAdapter,
+    ):
+        super().__init__(
+            ssl_verify, ssl_cert, future_adapter_class, response_adapter_class
+        )
+        self.user_agent = None
+
+    def request(
+        self, request_params, operation=None, request_config=None
+    ) -> HttpFuture:
+        if self.user_agent:
+            current_headers = request_params.get("headers", dict())
+            new_header = {"User-Agent": str(self.user_agent)}
+            request_params["headers"] = {**current_headers, **new_header}
+        
+        return super().request(request_params, operation, request_config)        
+
+
 def build_cache_name(name):
     """
     Cache key name formatter
@@ -378,7 +404,12 @@ def read_spec(path, http_client=None):
 
 
 def esi_client_factory(
-    token=None, datasource=None, spec_file=None, version=None, **kwargs
+    token=None,
+    datasource=None,
+    spec_file=None,
+    version=None,
+    app_text=None,
+    **kwargs
 ):
     """
     Generates an ESI client.
@@ -386,7 +417,9 @@ def esi_client_factory(
     :param datasource: Name of the ESI datasource to access.
     :param spec_file: Absolute path to a swagger spec file to load.
     :param version: Base ESI API version. Accepted values are 'legacy', 'latest', 
-    'dev', or 'vX' where X is a number.
+    :param app_text: :str: Text identifying the application using ESI
+    which will be included in the User-Agent header.
+    Should contain name and version of the application using ESI. e.g. `"my-app v1.0.0"`
     :param kwargs: Explicit resource versions to build, in the form Character='v4'. 
     Same values accepted as version.
     :return: :class:`bravado.client.SwaggerClient`
@@ -397,13 +430,22 @@ def esi_client_factory(
     """    
     if app_settings.ESI_INFO_LOGGING_ENABLED:
         logger.info('Generating an ESI client...')
-    client = requests_client.RequestsClient()
+    
+    client = RequestsClientPlus()
+    user_agent = (
+        str(app_text) if app_text else f"{__title__} v{__version__}"
+    )
+    if app_settings.ESI_CONTACT_EMAIL:
+        user_agent += f" {app_settings.ESI_CONTACT_EMAIL}"
+    
+    client.user_agent = user_agent
+
     my_http_adapter = HTTPAdapter(
         pool_maxsize=app_settings.ESI_CONNECTION_POOL_MAXSIZE, 
         max_retries=app_settings.ESI_CONNECTION_ERROR_MAX_RETRIES
     )
     client.session.mount('https://', my_http_adapter)
-    
+        
     if token or datasource:
         client.authenticator = TokenAuthenticator(token=token, datasource=datasource)
 
@@ -453,12 +495,22 @@ class EsiClientProvider:
 
     _client = None
     
-    def __init__(self, datasource=None, spec_file=None, version=None, **kwargs):
+    def __init__(
+        self, 
+        datasource=None, 
+        spec_file=None, 
+        version=None,
+        app_text=None, 
+        **kwargs
+    ):
         """        
         :param datasource: Name of the ESI datasource to access.
         :param spec_file: Absolute path to a swagger spec file to load.
         :param version: Base ESI API version. 
         Accepted values are 'legacy', 'latest', 'dev', or 'vX' where X is a number.
+        :param app_text: :str: Text identifying the application using ESI
+        which will be included in the User-Agent header. Should contain name 
+        and version of the application using ESI. e.g. `"my-app v1.0.0"`
         :param kwargs: Explicit resource versions to build, 
         in the form Character='v4'. Same values accepted as version.        
 
@@ -469,6 +521,7 @@ class EsiClientProvider:
         self._datasource = datasource
         self._spec_file = spec_file
         self._version = version
+        self._app_text = app_text
         self._kwargs = kwargs
 
     @property
@@ -478,6 +531,7 @@ class EsiClientProvider:
                 datasource=self._datasource,                
                 spec_file=self._spec_file,
                 version=self._version,
+                app_text=self._app_text,
                 **self._kwargs,
             )
         return self._client

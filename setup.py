@@ -19,6 +19,11 @@ setup(
         'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
     ],
+    extras_require={
+        "testing": [
+            "requests-mock",
+        ]
+    },
     packages=find_packages(),
     include_package_data=True,
     license='GNU General Public License v3 (GPLv3)',
