@@ -319,12 +319,12 @@ esi = EsiClientProvider(app_text="my-app v1.0.0")
 
 ### Contact email
 
-To enable CCP to contact server owners it is important to specify a contact email. This can be done through the setting ESI_CONTACT_EMAIL.
+To enable CCP to contact server owners it is important to specify a contact email. This can be done through the setting ESI_USER_CONTACT_EMAIL.
 
 Example:
 
 ```python
-ESI_CONTACT_EMAIL = "admin@example.com"
+ESI_USER_CONTACT_EMAIL = "admin@example.com"
 ```
 
 In case you are not hosting the app yourself, we would recommend including this setting in the installation guide for your app.
@@ -439,7 +439,7 @@ Django-esi can be configured through settings by adding them to your Django sett
 Name | Description | Default
 -- | -- | --
 `ESI_CONNECTION_POOL_MAXSIZE`| Max size of the connection pool. Increase this setting if you hav more parallel threads connected to ESI at the same time, e.g. if you are running more concurrent celery tasks that are doing ESI calls. | `10`
-`ESI_CONTACT_EMAIL`| Contact email address of server owner, which will be included in the User-Agent header of every request. | `None`
+`ESI_USER_CONTACT_EMAIL`| Contact email address of the ESI user, e.g. server admin, which will be included in the User-Agent header of every request. | `None`
 `ESI_INFO_LOGGING_ENABLED`| Enable/disable verbose info logging | `False`
 `ESI_SSO_CALLBACK_URL`| Required to enable SSO login / token creation | N/A
 `ESI_SSO_CLIENT_ID`| Client ID of Eve SSO app. Required to enable SSO login / token creation. | N/A

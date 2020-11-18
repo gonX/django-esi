@@ -29,7 +29,7 @@ ESI_LOG_LEVEL_LIBRARIES = str(getattr(settings, 'ESI_LOG_LEVEL_LIBRARIES', 'INFO
 
 # Set contact email address of server owner, 
 # which will be included in the User-Agent header of every request
-ESI_CONTACT_EMAIL = getattr(settings, 'ESI_CONTACT_EMAIL', None)
+ESI_USER_CONTACT_EMAIL = getattr(settings, 'ESI_USER_CONTACT_EMAIL', None)
 
 # Max size of the connection pool. Increase this setting if you hav more parallel
 # threads connected to ESI at the same time.

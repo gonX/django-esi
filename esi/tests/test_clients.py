@@ -608,7 +608,7 @@ class TestEsiClientProvider(TestCase):
 class TestClientResult2(TestCase):
 
     @classmethod
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", None)
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
     @patch(MODULE_PATH + ".__title__", "django-esi")
     @patch(MODULE_PATH + ".__version__", "1.0.0")
     def setUpTestData(cls):
@@ -690,7 +690,7 @@ class TestEsiClientFactoryAppText(TestCase):
             "start_time": "2017-01-02T12:34:56Z"
         }
             
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", None)
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
     def test_defaults(self, requests_mocker):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
@@ -708,7 +708,7 @@ class TestEsiClientFactoryAppText(TestCase):
             operation.future.request.headers["User-Agent"], "django-esi v1.0.0"
         )
 
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", None)
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
     def test_app_text(self, requests_mocker):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
@@ -726,7 +726,7 @@ class TestEsiClientFactoryAppText(TestCase):
             operation.future.request.headers["User-Agent"], "my-app v1.0.0"
         )
 
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", "dummy@example.com")
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", "dummy@example.com")
     def test_app_text_with_email(self, requests_mocker):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
@@ -745,7 +745,7 @@ class TestEsiClientFactoryAppText(TestCase):
             "my-app v1.0.0 dummy@example.com"
         )
 
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", "dummy@example.com")
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", "dummy@example.com")
     def test_defaults_with_email(self, requests_mocker):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
@@ -779,7 +779,7 @@ class TestEsiClientProviderAppText(TestCase):
 
     @patch(MODULE_PATH + ".__title__", "django-esi")
     @patch(MODULE_PATH + ".__version__", "1.0.0")
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", None)
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
     def test_defaults(self, requests_mocker):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
@@ -797,7 +797,7 @@ class TestEsiClientProviderAppText(TestCase):
             operation.future.request.headers["User-Agent"], "django-esi v1.0.0"
         )
 
-    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", "dummy@example.com")
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", "dummy@example.com")
     def test_app_text_with_email(self, requests_mocker):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec

@@ -436,8 +436,8 @@ def esi_client_factory(
     user_agent = (
         str(app_info_text) if app_info_text else f"{__title__} v{__version__}"
     )
-    if app_settings.ESI_CONTACT_EMAIL:
-        user_agent += f" {app_settings.ESI_CONTACT_EMAIL}"
+    if app_settings.ESI_USER_CONTACT_EMAIL:
+        user_agent += f" {app_settings.ESI_USER_CONTACT_EMAIL}"
     
     client.user_agent = user_agent
 
