@@ -608,6 +608,7 @@ class TestEsiClientProvider(TestCase):
 class TestClientResult2(TestCase):
 
     @classmethod
+    @patch(MODULE_PATH + ".app_settings.ESI_CONTACT_EMAIL", None)
     @patch(MODULE_PATH + ".__title__", "django-esi")
     @patch(MODULE_PATH + ".__version__", "1.0.0")
     def setUpTestData(cls):
@@ -719,7 +720,7 @@ class TestEsiClientFactoryAppText(TestCase):
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
         
-        client = esi_client_factory(app_text="my-app v1.0.0")
+        client = esi_client_factory(app_info_text="my-app v1.0.0")
         operation = client.Status.get_status()        
         self.assertEqual(
             operation.future.request.headers["User-Agent"], "my-app v1.0.0"
@@ -737,7 +738,7 @@ class TestEsiClientFactoryAppText(TestCase):
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
         
-        client = esi_client_factory(app_text="my-app v1.0.0")
+        client = esi_client_factory(app_info_text="my-app v1.0.0")
         operation = client.Status.get_status()        
         self.assertEqual(
             operation.future.request.headers["User-Agent"], 
@@ -808,7 +809,7 @@ class TestEsiClientProviderAppText(TestCase):
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
         
-        client = EsiClientProvider(app_text="my-app v1.0.0").client
+        client = EsiClientProvider(app_info_text="my-app v1.0.0").client
         operation = client.Status.get_status()        
         self.assertEqual(
             operation.future.request.headers["User-Agent"], 

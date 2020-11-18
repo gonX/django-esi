@@ -408,7 +408,7 @@ def esi_client_factory(
     datasource=None,
     spec_file=None,
     version=None,
-    app_text=None,
+    app_info_text=None,
     **kwargs
 ):
     """
@@ -417,9 +417,10 @@ def esi_client_factory(
     :param datasource: Name of the ESI datasource to access.
     :param spec_file: Absolute path to a swagger spec file to load.
     :param version: Base ESI API version. Accepted values are 'legacy', 'latest', 
-    :param app_text: :str: Text identifying the application using ESI
-    which will be included in the User-Agent header.
-    Should contain name and version of the application using ESI. e.g. `"my-app v1.0.0"`
+    :param app_info_text: :str: Text identifying the application using ESI
+    which will be included in the User-Agent header. Should contain name and version 
+    of the application using ESI. e.g. `"my-app v1.0.0"`. 
+    Note that spaces are used as delimiter.
     :param kwargs: Explicit resource versions to build, in the form Character='v4'. 
     Same values accepted as version.
     :return: :class:`bravado.client.SwaggerClient`
@@ -433,7 +434,7 @@ def esi_client_factory(
     
     client = RequestsClientPlus()
     user_agent = (
-        str(app_text) if app_text else f"{__title__} v{__version__}"
+        str(app_info_text) if app_info_text else f"{__title__} v{__version__}"
     )
     if app_settings.ESI_CONTACT_EMAIL:
         user_agent += f" {app_settings.ESI_CONTACT_EMAIL}"
@@ -500,7 +501,7 @@ class EsiClientProvider:
         datasource=None, 
         spec_file=None, 
         version=None,
-        app_text=None, 
+        app_info_text=None, 
         **kwargs
     ):
         """        
@@ -508,9 +509,10 @@ class EsiClientProvider:
         :param spec_file: Absolute path to a swagger spec file to load.
         :param version: Base ESI API version. 
         Accepted values are 'legacy', 'latest', 'dev', or 'vX' where X is a number.
-        :param app_text: :str: Text identifying the application using ESI
+        :param app_info_text: :str: Text identifying the application using ESI
         which will be included in the User-Agent header. Should contain name 
-        and version of the application using ESI. e.g. `"my-app v1.0.0"`
+        and version of the application using ESI. e.g. `"my-app v1.0.0"`. 
+        Note that spaces are used as delimiter.
         :param kwargs: Explicit resource versions to build, 
         in the form Character='v4'. Same values accepted as version.        
 
@@ -521,7 +523,7 @@ class EsiClientProvider:
         self._datasource = datasource
         self._spec_file = spec_file
         self._version = version
-        self._app_text = app_text
+        self._app_text = app_info_text
         self._kwargs = kwargs
 
     @property
@@ -531,7 +533,7 @@ class EsiClientProvider:
                 datasource=self._datasource,                
                 spec_file=self._spec_file,
                 version=self._version,
-                app_text=self._app_text,
+                app_info_text=self._app_text,
                 **self._kwargs,
             )
         return self._client
