@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+## [2.0.3] - 2020-11-11
+
+### Fixed
+
+- Migration support for MySQL8 https://gitlab.com/allianceauth/django-esi/-/merge_requests/37
+- Retry fixes, Adds Custom Retries https://gitlab.com/allianceauth/django-esi/-/merge_requests/39
+- Cache Exception handling https://gitlab.com/allianceauth/django-esi/-/merge_requests/40
+
 ## [2.0.2] - 2020-10-01
 
 ### Fixed
