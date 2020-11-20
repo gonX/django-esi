@@ -297,29 +297,31 @@ CCP asks developers to provide a "good User-Agent header" with all requests to E
 
 Django-esi provides two features for setting the User-Agent header:
 
-### Application string
+### Application Info
 
-You can set an application string with the name and version of your application. This is done by setting the optional `app_text` parameter when creating a client with `EsiClientProvider()` or `esi_client_factory()`.
+You configure the User-Agent to represent your application by setting the `app_info_text` parameter when creating a client with `EsiClientProvider()` or with `esi_client_factory()`.
 
-There is no defined format for the application string, but we would suggest something like this:
+There is no official format for the User-Agent, but we would suggest including the distribution name (same as e.g. in your `setup.py`) and current version of your application like so:
 
 ```Python
 "my-app v1.0.0"
 ```
 
-Here is an example for defining an application string with your app:
+Here is a complete example for defining an application string with your app:
 
 ```python
 from esi.clients import EsiClientProvider
 
-esi = EsiClientProvider(app_text="my-app v1.0.0")
+esi = EsiClientProvider(app_info_text="my-app v1.0.0")
 ```
+
+> **Hint**<br>Spaces are used as delimiter in the User Agent, so your application name should not include any.
 
 > **Note**<br>If you do not define an application string, the application string used will be `"django-esi vX.Y.Z"`.
 
 ### Contact email
 
-To enable CCP to contact server owners it is important to specify a contact email. This can be done through the setting ESI_USER_CONTACT_EMAIL.
+To enable CCP to contact the maintainer of a server that is using ESI it is important to specify a contact email. This can be done through the setting ESI_USER_CONTACT_EMAIL.
 
 Example:
 
