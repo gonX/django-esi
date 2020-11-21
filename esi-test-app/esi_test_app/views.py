@@ -6,8 +6,10 @@ from esi.clients import EsiClientProvider
 from esi.models import Token
 from esi.decorators import token_required, single_use_token
 
+from esi import __version__
+
 # create client provider
-esi = EsiClientProvider()
+esi = EsiClientProvider(app_info_text=f"esi-test-app {__version__}")
 
 # setup logger
 logger = logging.getLogger(__name__)

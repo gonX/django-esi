@@ -8,6 +8,7 @@ import bravado
 from bravado_core.spec import Spec
 from bravado.requests_client import RequestsClient
 from bravado.exception import HTTPBadGateway
+import requests_mock
 
 import django
 from django.contrib.auth.models import User
@@ -28,7 +29,8 @@ from ..clients import (
     read_spec,
     minimize_spec,
     SwaggerClient,
-    CachingHttpFuture
+    CachingHttpFuture,
+    RequestsClientPlus
 )
 from ..errors import TokenExpiredError
 
@@ -41,6 +43,11 @@ SWAGGER_SPEC_PATH_FULL = os.path.join(
 
 MODULE_PATH = 'esi.clients'
 _set_logger(logging.getLogger(MODULE_PATH), __file__)
+
+
+def _load_json_file(path):    
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def my_sleep(value):
@@ -332,12 +339,6 @@ class TestEsiClientFactory(TestCase):
         client = esi_client_factory(token=self.token)
         self.assertIsInstance(client, SwaggerClient)
 
-    def test_client_with_datasource(self, mock_RequestsClient):
-        mock_RequestsClient.return_value.request.return_value.\
-            result.return_value.json.return_value = self.test_spec_dict
-        client = esi_client_factory(datasource='singularity')
-        self.assertIsInstance(client, SwaggerClient)
-
     def test_client_with_version(self, mock_RequestsClient):
         mock_RequestsClient.return_value.request.return_value.\
             result.return_value.json.return_value = self.test_spec_dict
@@ -601,3 +602,216 @@ class TestEsiClientProvider(TestCase):
         args, kwargs = mock_esi_client_factory.call_args
         self.assertEqual(kwargs['alpha'], 'yes')
         self.assertEqual(kwargs['bravo'], 'no')
+
+
+@requests_mock.Mocker()
+class TestClientResult2(TestCase):
+
+    @classmethod
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
+    @patch(MODULE_PATH + ".__title__", "django-esi")
+    @patch(MODULE_PATH + ".__version__", "1.0.0")
+    def setUpTestData(cls):
+        cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
+    
+    def test_normal_call(self, requests_mocker):
+        requests_mocker.register_uri('GET', url="https://esi.evetech.net/v1/status/")
+        self.c.Status.get_status().result()
+        
+        self.assertTrue(requests_mocker.called)
+        request = requests_mocker.last_request        
+        self.assertEqual(request._request.headers["User-Agent"], "django-esi v1.0.0")
+
+    def test_existing_headers(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', 
+            url="https://esi.evetech.net/v1/status/", 
+        )
+        self.c.Status.get_status().result()
+        
+        self.assertTrue(requests_mocker.called)
+        request = requests_mocker.last_request        
+        self.assertEqual(request._request.headers["User-Agent"], "django-esi v1.0.0")
+
+
+class TestRequestsClientPlus(TestCase):
+
+    def test_single_header(self):
+        """When no headers are set, just add the new header"""
+        obj = RequestsClientPlus()
+        obj.user_agent = "abc"
+        result = obj.request(
+            {
+                "method": "GET", 
+                "url": "https://esi.evetech.net/v1/status/"
+            }
+        )
+        self.assertEqual(result.future.request.headers["User-Agent"], "abc")
+
+    def test_existing_header(self):
+        """When a header exists, leave it intact"""
+        obj = RequestsClientPlus()
+        obj.user_agent = "abc"
+        result = obj.request(
+            {
+                "method": "GET", 
+                "url": "https://esi.evetech.net/v1/status/",
+                "headers": {"From": "dummy@example.com"}
+            }
+        )
+        self.assertEqual(result.future.request.headers["User-Agent"], "abc")
+        self.assertEqual(result.future.request.headers["From"], "dummy@example.com")
+
+    def test_no_user_agent(self):
+        """When no user agent is defined, leave the existing header intact"""
+        obj = RequestsClientPlus()        
+        result = obj.request(
+            {
+                "method": "GET", 
+                "url": "https://esi.evetech.net/v1/status/",
+                "headers": {"From": "dummy@example.com"}
+            }
+        )        
+        self.assertEqual(result.future.request.headers["From"], "dummy@example.com")
+        self.assertNotIn("User-Agent", result.future.request.headers)
+
+
+@patch(MODULE_PATH + ".__title__", "django-esi")
+@patch(MODULE_PATH + ".__version__", "1.0.0")
+@requests_mock.Mocker()
+class TestEsiClientFactoryAppText(TestCase):    
+    @classmethod
+    def setUpClass(cls) -> None:    
+        super().setUpClass()
+        cls.spec = _load_json_file(SWAGGER_SPEC_PATH_MINIMAL)
+        cls.status_response = {
+            "players": 12345,
+            "server_version": "1132976",
+            "start_time": "2017-01-02T12:34:56Z"
+        }
+            
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
+    def test_defaults(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
+        )
+        
+        client = esi_client_factory()
+        operation = client.Status.get_status()        
+        self.assertEqual(
+            operation.future.request.headers["User-Agent"], "django-esi v1.0.0"
+        )
+
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
+    def test_app_text(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
+        )
+        
+        client = esi_client_factory(app_info_text="my-app v1.0.0")
+        operation = client.Status.get_status()        
+        self.assertEqual(
+            operation.future.request.headers["User-Agent"], "my-app v1.0.0"
+        )
+
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", "dummy@example.com")
+    def test_app_text_with_email(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
+        )
+        
+        client = esi_client_factory(app_info_text="my-app v1.0.0")
+        operation = client.Status.get_status()        
+        self.assertEqual(
+            operation.future.request.headers["User-Agent"], 
+            "my-app v1.0.0 dummy@example.com"
+        )
+
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", "dummy@example.com")
+    def test_defaults_with_email(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
+        )
+        
+        client = esi_client_factory()
+        operation = client.Status.get_status()        
+        self.assertEqual(
+            operation.future.request.headers["User-Agent"], 
+            "django-esi v1.0.0 dummy@example.com"
+        )
+
+
+@requests_mock.Mocker()
+class TestEsiClientProviderAppText(TestCase):    
+    @classmethod
+    def setUpClass(cls) -> None:    
+        super().setUpClass()
+        cls.spec = _load_json_file(SWAGGER_SPEC_PATH_MINIMAL)
+        cls.status_response = {
+            "players": 12345,
+            "server_version": "1132976",
+            "start_time": "2017-01-02T12:34:56Z"
+        }
+
+    @patch(MODULE_PATH + ".__title__", "django-esi")
+    @patch(MODULE_PATH + ".__version__", "1.0.0")
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
+    def test_defaults(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
+        )
+                
+        client = EsiClientProvider().client
+        operation = client.Status.get_status()        
+        self.assertEqual(
+            operation.future.request.headers["User-Agent"], "django-esi v1.0.0"
+        )
+
+    @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", "dummy@example.com")
+    def test_app_text_with_email(self, requests_mocker):
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/_latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/latest/swagger.json", json=self.spec
+        )
+        requests_mocker.register_uri(
+            'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
+        )
+        
+        client = EsiClientProvider(app_info_text="my-app v1.0.0").client
+        operation = client.Status.get_status()        
+        self.assertEqual(
+            operation.future.request.headers["User-Agent"], 
+            "my-app v1.0.0 dummy@example.com"
+        )
