@@ -65,13 +65,14 @@ class Token(models.Model):
         editable=False
     )
     refresh_token = models.TextField(
-        help_text="A re-usable token to generate new access tokens upon expiry.",
+        null=True,  # refresh tokens returned from SSO can be null
+        help_text="A re-usable token to generate new access tokens upon expiry.",        
         editable=False
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        blank=True, 
+        blank=True,
         null=True,
         help_text="The user to whom this token belongs."
     )
