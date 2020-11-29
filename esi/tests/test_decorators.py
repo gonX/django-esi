@@ -20,26 +20,26 @@ logger = _set_logger(logging.getLogger('esi.decorators'), __file__)
 
 class TestCheckCallback(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
         )
-        
+
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name=self.user.username,
                 scopes=['abc', 'xyz', '123']
-            ), 
+            ),
             self.user
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
 
-    def test_normal(self): 
-        logger.debug('start')       
+    def test_normal(self):
+        logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
@@ -51,72 +51,72 @@ class TestCheckCallback(TestCase):
             url='https://www.example.com/redirect/',
             state='xyz',
             token=self.token
-        )        
+        )
         response = _check_callback(request)
         self.assertEqual(response, self.token)
 
     def test_no_cb(self):
-        logger.debug('start')        
+        logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-                
+
         response = _check_callback(request)
         self.assertIsNone(response)
 
     def test_no_token(self):
-        logger.debug('start')        
+        logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-        
+
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
             url='https://www.example.com/redirect/',
             state='xyz'
         )
-                
+
         response = _check_callback(request)
         self.assertIsNone(response)
 
     def test_no_session(self):
-        logger.debug('start')        
+        logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
-                
+
         response = _check_callback(request)
         self.assertIsNone(response)
 
 
 class TestTokensRequired(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
         )
-        
+
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name=self.user.username,
                 scopes=['abc', '123']
-            ), 
+            ),
             self.user
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-     
+
     def test_token_already_exists(self):
         logger.debug('start')
-        
+
         @tokens_required(scopes='abc')
         def my_view(request, tokens):
             return tokens
@@ -133,9 +133,9 @@ class TestTokensRequired(TestCase):
             self.token
         )
 
-    def test_token_and_cb_already_exists(self):        
+    def test_token_and_cb_already_exists(self):
         logger.debug('start')
-        
+
         @tokens_required(scopes='abc')
         def my_view(request, tokens):
             return tokens
@@ -145,13 +145,13 @@ class TestTokensRequired(TestCase):
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-        
+
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
             url='https://www.example.com/redirect/',
             state='xyz',
             token=self.token
-        )     
+        )
 
         response = my_view(request)
         self.assertEqual(
@@ -162,7 +162,7 @@ class TestTokensRequired(TestCase):
     @patch('esi.views.sso_redirect', autospec=True)
     def test_token_does_not_exist(self, mock_sso_redirect):
         logger.debug('start')
-        
+
         @tokens_required(scopes='xyz')
         def my_view(request, tokens):
             return tokens
@@ -183,7 +183,7 @@ class TestTokensRequired(TestCase):
 
     def test_coming_back_from_sso(self):
         logger.debug('start')
-        
+
         @tokens_required(scopes='abc', new=True)
         def my_view(request, tokens):
             return tokens
@@ -193,23 +193,23 @@ class TestTokensRequired(TestCase):
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-        
+
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
             url='https://www.example.com/redirect/',
             state='xyz',
             token=self.token
-        )     
+        )
 
         response = my_view(request)
         self.assertEqual(
             response.first(),
             self.token
         )
-    
+
     def test_user_not_authed(self):
         logger.debug('start')
-        
+
         @tokens_required(scopes='abc')
         def my_view(request, tokens):
             return tokens
@@ -218,7 +218,7 @@ class TestTokensRequired(TestCase):
         mock_user.is_authenticated = False
 
         request = self.factory.get('https://www.example.com/my_view/')
-        request.user = mock_user        
+        request.user = mock_user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
@@ -232,33 +232,33 @@ class TestTokensRequired(TestCase):
 
 class TestTokenRequired(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
         )
-        
+
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name=self.user.username,
                 scopes=['abc', '123']
-            ), 
+            ),
             self.user
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-    
+
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
     def test_initial_call_with_matching_tokens(
-        self, 
+        self,
         mock_sso_redirect,
         mock_select_token
     ):
         logger.debug('start')
-        
+
         @token_required(scopes='abc')
         def my_view(request, tokens):
             return tokens
@@ -281,12 +281,12 @@ class TestTokenRequired(TestCase):
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
     def test_initial_call_wo_matching_tokens(
-        self, 
+        self,
         mock_sso_redirect,
         mock_select_token
     ):
         logger.debug('start')
-        
+
         @token_required(scopes='xyz')
         def my_view(request, tokens):
             return tokens
@@ -307,10 +307,10 @@ class TestTokenRequired(TestCase):
         )
 
     def test_coming_back_from_sso_normal(
-        self, 
+        self,
     ):
         logger.debug('start')
-        
+
         @token_required(scopes='abc', new=True)
         def my_view(request, token):
             return token
@@ -326,7 +326,7 @@ class TestTokenRequired(TestCase):
             url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
-        ) 
+        )
 
         response = my_view(request)
         self.assertEqual(
@@ -337,12 +337,12 @@ class TestTokenRequired(TestCase):
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
     def test_user_wants_to_add_new_token(
-        self, 
+        self,
         mock_sso_redirect,
         mock_select_token
     ):
         logger.debug('start')
-        
+
         @token_required(scopes='abc')
         def my_view(request, token):
             return token
@@ -356,7 +356,7 @@ class TestTokenRequired(TestCase):
                 '_add': False
             }
         )
-        request.user = self.user        
+        request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
@@ -366,7 +366,7 @@ class TestTokenRequired(TestCase):
             url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
-        ) 
+        )
 
         response = my_view(request)
         self.assertEqual(
@@ -377,12 +377,12 @@ class TestTokenRequired(TestCase):
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
     def test_user_chose_existing_token(
-        self, 
+        self,
         mock_sso_redirect,
         mock_select_token
     ):
         logger.debug('start')
-        
+
         @token_required(scopes='abc')
         def my_view(request, token):
             return token
@@ -396,7 +396,7 @@ class TestTokenRequired(TestCase):
                 '_token': self.token.pk
             }
         )
-        request.user = self.user        
+        request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
@@ -406,7 +406,7 @@ class TestTokenRequired(TestCase):
             url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
-        ) 
+        )
 
         response = my_view(request)
         self.assertEqual(
@@ -417,12 +417,12 @@ class TestTokenRequired(TestCase):
     @patch('esi.views.select_token', autospec=True)
     @patch('esi.views.sso_redirect', autospec=True)
     def test_user_chose_token_which_does_not_exist(
-        self, 
+        self,
         mock_sso_redirect,
         mock_select_token
     ):
         logger.debug('start')
-        
+
         @token_required(scopes='abc')
         def my_view(request, token):
             return token
@@ -437,7 +437,7 @@ class TestTokenRequired(TestCase):
                 '_token': invalid_token_pk
             }
         )
-        request.user = self.user        
+        request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
@@ -447,7 +447,7 @@ class TestTokenRequired(TestCase):
             url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
-        ) 
+        )
 
         response = my_view(request)
         self.assertEqual(
@@ -458,25 +458,25 @@ class TestTokenRequired(TestCase):
 
 class TestSingleUseTokenRequired(TestCase):
 
-    def setUp(self):                
+    def setUp(self):
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name="No Auth Character",
                 scopes=['abc', '123']
-            ), 
+            ),
             None
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-    
+
     @patch('esi.views.sso_redirect', autospec=True)
     def test_initial_call_wo_matching_tokens(
-        self, 
+        self,
         mock_sso_redirect
     ):
         logger.debug('start')
-        
+
         @single_use_token(scopes='xyz')
         def my_view(request, tokens):
             return tokens
@@ -494,12 +494,12 @@ class TestSingleUseTokenRequired(TestCase):
             response,
             'sso_redirect_view_called'
         )
-    
+
     def test_coming_back_from_sso_normal(
-        self, 
+        self,
     ):
         logger.debug('start')
-        
+
         @single_use_token(scopes='abc', new=True)
         def my_view(request, token):
             return token
@@ -515,7 +515,7 @@ class TestSingleUseTokenRequired(TestCase):
             url='https://www.example.com/redirect/',
             state='qwe123',
             token=self.token
-        ) 
+        )
 
         response = my_view(request)
         self.assertEqual(

@@ -25,10 +25,10 @@ logger.setLevel(logging.DEBUG)
 ESI_SCOPES = ['esi-characters.read_medals.v1']
 
 
-def index(request):        
+def index(request):
     """Start page with ability to login"""
     return render(
-        request, 
+        request,
         'esi_test_app/index.html', context={'scopes': ESI_SCOPES}
     )
 
@@ -43,7 +43,7 @@ def test_single_use_token(request, token):
 def test_token_required_1(request):
     """Preparing environment for test"""
     logger.info('--------------------------------------------')
-    logger.info('starting API test with user {}'.format(request.user.username))    
+    logger.info('starting API test with user {}'.format(request.user.username))
     Token.objects.filter(user=request.user, scopes__name__in=ESI_SCOPES).delete()
     return redirect('esi_test_app:test_token_required_2')
 
@@ -58,8 +58,8 @@ def test_token_required_2(request, token):
 def run_api_test(request):
     """Running the API test"""
     logger.info('starting ESI client')
-    token = Token.objects.get(pk=request.session['token_pk'])    
-    
+    token = Token.objects.get(pk=request.session['token_pk'])
+
     try:
         logger.info('making call to ESI with token')
         esi.client.Character\
@@ -73,7 +73,7 @@ def run_api_test(request):
         logger.info('API test succeeded')
 
     except Exception as ex:
-        test_success = False        
+        test_success = False
         logger.exception('API test failed: {}'.format(ex))
         error_str = str(ex)
 

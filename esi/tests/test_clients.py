@@ -17,13 +17,13 @@ from django.test import TestCase
 from django.utils import timezone
 
 from . import _generate_token, _store_as_Token, _set_logger
-from ..clients import (    
-    EsiClientProvider, 
-    esi_client_factory, 
-    TokenAuthenticator, 
+from ..clients import (
+    EsiClientProvider,
+    esi_client_factory,
+    TokenAuthenticator,
     build_cache_name,
     build_spec,
-    build_spec_url,    
+    build_spec_url,
     cache_spec,
     get_spec,
     read_spec,
@@ -45,7 +45,7 @@ MODULE_PATH = 'esi.clients'
 _set_logger(logging.getLogger(MODULE_PATH), __file__)
 
 
-def _load_json_file(path):    
+def _load_json_file(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -116,13 +116,13 @@ class TestClientCache(TestCase):
         self, mock_future_result, mock_cache_get, mock_cache_set
     ):
         cache.clear()
-        mock_future_result.return_value = ({'players': 500}, MockResultFuture())        
+        mock_future_result.return_value = ({'players': 500}, MockResultFuture())
         mock_cache_get.side_effect = RuntimeError("TEST: Could not read from cache")
 
         # hit api
         r = self.c.Status.get_status().result()
         self.assertEquals(r['players'], 500)
-    
+
 
 @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 3)
 @patch(MODULE_PATH + '.app_settings.ESI_API_URL', 'https://www.example.com/esi/')
@@ -130,7 +130,7 @@ class TestClientCache(TestCase):
 @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
 class TestTokenAuthenticator(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
@@ -142,10 +142,10 @@ class TestTokenAuthenticator(TestCase):
                 character_name=self.user.username,
                 scopes=['abc'],
                 access_token='my_access_token'
-            ), 
+            ),
             self.user
-        )        
-    
+        )
+
     def test_apply_defaults(self):
         request = Mock()
         request.headers = dict()
@@ -155,7 +155,7 @@ class TestTokenAuthenticator(TestCase):
         request2 = x.apply(request)
         self.assertEqual(request2.headers['Authorization'], None)
         self.assertEqual(request2.params['datasource'], 'dummy')
-    
+
     def test_apply_token(self):
         request = Mock()
         request.headers = dict()
@@ -165,7 +165,7 @@ class TestTokenAuthenticator(TestCase):
         request2 = x.apply(request)
         self.assertEqual(request2.headers['Authorization'], 'Bearer my_access_token')
         self.assertEqual(request2.params['datasource'], 'dummy')
-    
+
     def test_apply_token_datasource(self):
         request = Mock()
         request.headers = dict()
@@ -175,7 +175,7 @@ class TestTokenAuthenticator(TestCase):
         request2 = x.apply(request)
         self.assertEqual(request2.headers['Authorization'], 'Bearer my_access_token')
         self.assertEqual(request2.params['datasource'], 'dummy2')
-        
+
     @patch('esi.models.Token.refresh', spec=True)
     def test_apply_token_expired_success(self, mock_Token_refresh):
         request = Mock()
@@ -183,34 +183,34 @@ class TestTokenAuthenticator(TestCase):
         request.params = dict()
 
         self.token.created -= timedelta(121)
-        
+
         x = TokenAuthenticator(token=self.token)
         request2 = x.apply(request)
         self.assertEqual(request2.headers['Authorization'], 'Bearer my_access_token')
         self.assertEqual(request2.params['datasource'], 'dummy')
         self.assertEqual(mock_Token_refresh.call_count, 1)
-        
+
     @patch('esi.models.Token.refresh', spec=True)
-    def test_apply_token_expired_failed(self, mock_Token_refresh):        
+    def test_apply_token_expired_failed(self, mock_Token_refresh):
         request = Mock()
         request.headers = dict()
         request.params = dict()
 
         self.token.created -= timedelta(121)
         self.token.refresh_token = None
-        
+
         x = TokenAuthenticator(token=self.token)
         with self.assertRaises(TokenExpiredError):
             x.apply(request)
-        
+
         self.assertEqual(mock_Token_refresh.call_count, 0)
 
 
 class TestModuleFunctions(TestCase):
-    
+
     @classmethod
-    def setUpClass(cls):        
-        super().setUpClass()        
+    def setUpClass(cls):
+        super().setUpClass()
         with open(SWAGGER_SPEC_PATH_MINIMAL, 'r', encoding='utf-8') as f:
             cls.test_spec_dict = json.load(f)
 
@@ -233,22 +233,22 @@ class TestModuleFunctions(TestCase):
 
     @patch(MODULE_PATH + '.requests_client.RequestsClient', spec=True)
     @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
-    def test_get_spec_defaults(self, mock_RequestsClient):        
+    def test_get_spec_defaults(self, mock_RequestsClient):
         mock_RequestsClient.return_value.request.return_value.\
             result.return_value.json.return_value = self.test_spec_dict
         spec = get_spec('latest')
         self.assertIsInstance(spec, Spec)
 
-    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)                
-    def test_get_spec_with_http_client(self):        
+    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
+    def test_get_spec_with_http_client(self):
         mock_http_client = Mock(spec=RequestsClient)
         mock_http_client.request.return_value.result.return_value.json.return_value = \
             self.test_spec_dict
         spec = get_spec('latest', http_client=mock_http_client)
         self.assertIsInstance(spec, Spec)
 
-    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)                
-    def test_get_spec_with_config(self):        
+    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
+    def test_get_spec_with_config(self):
         mock_http_client = Mock(spec=RequestsClient)
         mock_http_client.request.return_value.result.return_value.json.return_value = \
             self.test_spec_dict
@@ -258,24 +258,24 @@ class TestModuleFunctions(TestCase):
         self.assertIsInstance(spec, Spec)
         self.assertIn('dummy_config', spec.config)
 
-    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)    
-    def test_build_spec_defaults(self):        
+    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
+    def test_build_spec_defaults(self):
         mock_http_client = Mock(spec=RequestsClient)
         mock_http_client.request.return_value.result.return_value\
             .json.return_value = self.test_spec_dict
         spec = build_spec('v1', http_client=mock_http_client)
         self.assertIsInstance(spec, Spec)
 
-    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)    
-    def test_build_spec_explicit_resource_found(self):        
+    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
+    def test_build_spec_explicit_resource_found(self):
         mock_http_client = Mock(spec=RequestsClient)
         mock_http_client.request.return_value.result.return_value\
             .json.return_value = self.test_spec_dict
         spec = build_spec('v1', http_client=mock_http_client, Status='v1')
         self.assertIsInstance(spec, Spec)
-    
-    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)    
-    def test_build_spec_explicit_resource_not_found(self):        
+
+    @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
+    def test_build_spec_explicit_resource_not_found(self):
         mock_http_client = Mock(spec=RequestsClient)
         mock_http_client.request.return_value.result.return_value\
             .json.return_value = self.test_spec_dict
@@ -294,7 +294,7 @@ class TestModuleFunctions(TestCase):
         spec_dict = minimize_spec(self.test_spec_dict)
         self.assertIsInstance(spec_dict, dict)
         # todo: add better verification of functionality
-    
+
     def test_minimize_spec_resources(self):
         spec_dict = minimize_spec(self.test_spec_dict, resources=['Status'])
         self.assertIsInstance(spec_dict, dict)
@@ -304,14 +304,14 @@ class TestModuleFunctions(TestCase):
 @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 1)
 @patch(MODULE_PATH + '.requests_client.RequestsClient')
 class TestEsiClientFactory(TestCase):
-    
+
     @classmethod
-    def setUpClass(cls):        
-        super().setUpClass()        
+    def setUpClass(cls):
+        super().setUpClass()
         with open(SWAGGER_SPEC_PATH_MINIMAL, 'r', encoding='utf-8') as f:
             cls.test_spec_dict = json.load(f)
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
@@ -323,16 +323,16 @@ class TestEsiClientFactory(TestCase):
                 character_name=self.user.username,
                 scopes=['abc'],
                 access_token='my_access_token'
-            ), 
+            ),
             self.user
-        )        
-    
-    def test_minimal_client(self, mock_RequestsClient):        
+        )
+
+    def test_minimal_client(self, mock_RequestsClient):
         mock_RequestsClient.return_value.request.return_value.\
             result.return_value.json.return_value = self.test_spec_dict
         client = esi_client_factory()
         self.assertIsInstance(client, SwaggerClient)
-    
+
     def test_client_with_token(self, mock_RequestsClient):
         mock_RequestsClient.return_value.request.return_value.\
             result.return_value.json.return_value = self.test_spec_dict
@@ -386,46 +386,46 @@ class TestClientResult(TestCase):
         self.assertTrue(mock_future_result.called)
         args, kwargs = mock_future_result.call_args
         self.assertEqual(kwargs['timeout'], 42)
-    
+
     def test_support_language_parameter(self, mock_future_result):
-        mock_future_result.return_value = (None, Mock(**{'headers': {}}))        
+        mock_future_result.return_value = (None, Mock(**{'headers': {}}))
         my_language = 'de'
         operation = self.c.Status.get_status()
         operation.result(language=my_language)
-        self.assertTrue(mock_future_result.called)        
+        self.assertTrue(mock_future_result.called)
         self.assertEqual(operation.future.request.params['language'], my_language)
         args, kwargs = mock_future_result.call_args
         self.assertNotIn('language', kwargs)
-    
+
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
     @patch(MODULE_PATH + '.sleep')
     def test_retries_1(self, mock_sleep, mock_future_result):
         mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
         try:
             self.c.Status.get_status().result()
         except HTTPBadGateway as e:
             # requests error thrown
-            self.assertIsInstance(e, HTTPBadGateway)  
+            self.assertIsInstance(e, HTTPBadGateway)
             # we tried # times before raising
             self.assertEqual(mock_future_result.call_count, 5)
             call_list = mock_sleep.call_args_list
             result = [args[0] for args, _ in [x for x in call_list]]
             expected = [0.5, 1.0, 2.0]
             self.assertListEqual(expected, result)
-            
+
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 1)
     @patch(MODULE_PATH + '.sleep')
     def test_retries_2(self, mock_sleep, mock_future_result):
         mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
         try:
             self.c.Status.get_status().result()
         except HTTPBadGateway as e:
             # requests error thrown
-            self.assertIsInstance(e, HTTPBadGateway)  
+            self.assertIsInstance(e, HTTPBadGateway)
             # we tried # times before raising
             self.assertEqual(mock_future_result.call_count, 2)
 
@@ -434,29 +434,29 @@ class TestClientResult(TestCase):
     @patch(MODULE_PATH + '.sleep')
     def test_retries_3(self, mock_sleep, mock_future_result):
         mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
         try:
             self.c.Status.get_status().result()
         except HTTPBadGateway as e:
             # requests error thrown
-            self.assertIsInstance(e, HTTPBadGateway)  
+            self.assertIsInstance(e, HTTPBadGateway)
             # we tried # times before raising
             self.assertEqual(mock_future_result.call_count, 1)
-           
+
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.5)
     @patch(MODULE_PATH + '.app_settings.ESI_SERVER_ERROR_MAX_RETRIES', 4)
     @patch(MODULE_PATH + '.sleep')
     def test_retry_with_custom_retries(self, mock_sleep, mock_future_result):
         mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())        
+        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
         try:
             self.c.Status.get_status().result(retries=1)
         except HTTPBadGateway as e:
             # requests error thrown
-            self.assertIsInstance(e, HTTPBadGateway)  
+            self.assertIsInstance(e, HTTPBadGateway)
             # we tried # times before raising
             self.assertEqual(mock_future_result.call_count, 2)
-            
+
 
 @patch(MODULE_PATH + '.HttpFuture.result')
 class TestClientResultAllPages(TestCase):
@@ -476,7 +476,7 @@ class TestClientResultAllPages(TestCase):
         mock_future_result.return_value = ({"contract_test": 1}, MockResultHeaders())
         self.c.Contracts.get_contracts_public_region_id(region_id=1).results()
         self.assertEqual(mock_future_result.call_count, 10)  # we got 10 pages of data
-    
+
     def test_pages_response(self, mock_future_result):
 
         class MockResultHeaders:
@@ -514,7 +514,7 @@ class TestClientResultsLocalized(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
-    
+
     @staticmethod
     def my_results(**kwargs):
         if 'language' in kwargs:
@@ -545,17 +545,17 @@ class TestClientResultsLocalized(TestCase):
 
     def test_raise_on_invalid_language(self, mock_future_results):
         mock_future_results.side_effect = self.my_results
-        
+
         with self.assertRaises(ValueError):
             self.c.Status.get_status().results_localized(languages=['lang2', 'xxx'])
-        
+
 
 @patch(MODULE_PATH + '.esi_client_factory')
-class TestEsiClientProvider(TestCase):    
-      
+class TestEsiClientProvider(TestCase):
+
     def test_client_loads_on_demand(self, mock_esi_client_factory):
         mock_esi_client_factory.return_value = 'my_client'
-        
+
         # create client on demand when called the first time
         my_provider = EsiClientProvider()
         self.assertFalse(mock_esi_client_factory.called)
@@ -569,36 +569,36 @@ class TestEsiClientProvider(TestCase):
         new_client = my_provider.client
         self.assertTrue(mock_esi_client_factory.call_count, 1)
         self.assertEqual(my_client, new_client)
-            
-    def test_str(self, mock_esi_client_factory):        
+
+    def test_str(self, mock_esi_client_factory):
         my_provider = EsiClientProvider()
         self.assertEqual(str(my_provider), 'EsiClientProvider')
-    
+
     def test_with_datasource(self, mock_esi_client_factory):
         my_provider = EsiClientProvider(datasource='dummy')
         my_provider.client()
-        self.assertTrue(mock_esi_client_factory.called)        
+        self.assertTrue(mock_esi_client_factory.called)
         args, kwargs = mock_esi_client_factory.call_args
         self.assertEqual(kwargs['datasource'], 'dummy')
-    
+
     def test_with_spec_file(self, mock_esi_client_factory):
         my_provider = EsiClientProvider(spec_file='dummy')
         my_provider.client()
-        self.assertTrue(mock_esi_client_factory.called)        
+        self.assertTrue(mock_esi_client_factory.called)
         args, kwargs = mock_esi_client_factory.call_args
         self.assertEqual(kwargs['spec_file'], 'dummy')
-    
+
     def test_with_version(self, mock_esi_client_factory):
         my_provider = EsiClientProvider(version='dummy')
         my_provider.client()
-        self.assertTrue(mock_esi_client_factory.called)        
+        self.assertTrue(mock_esi_client_factory.called)
         args, kwargs = mock_esi_client_factory.call_args
         self.assertEqual(kwargs['version'], 'dummy')
 
     def test_with_kwargs(self, mock_esi_client_factory):
         my_provider = EsiClientProvider(alpha='yes', bravo='no')
         my_provider.client()
-        self.assertTrue(mock_esi_client_factory.called)        
+        self.assertTrue(mock_esi_client_factory.called)
         args, kwargs = mock_esi_client_factory.call_args
         self.assertEqual(kwargs['alpha'], 'yes')
         self.assertEqual(kwargs['bravo'], 'no')
@@ -613,24 +613,24 @@ class TestClientResult2(TestCase):
     @patch(MODULE_PATH + ".__version__", "1.0.0")
     def setUpTestData(cls):
         cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
-    
+
     def test_normal_call(self, requests_mocker):
         requests_mocker.register_uri('GET', url="https://esi.evetech.net/v1/status/")
         self.c.Status.get_status().result()
-        
+
         self.assertTrue(requests_mocker.called)
-        request = requests_mocker.last_request        
+        request = requests_mocker.last_request
         self.assertEqual(request._request.headers["User-Agent"], "django-esi v1.0.0")
 
     def test_existing_headers(self, requests_mocker):
         requests_mocker.register_uri(
-            'GET', 
-            url="https://esi.evetech.net/v1/status/", 
+            'GET',
+            url="https://esi.evetech.net/v1/status/",
         )
         self.c.Status.get_status().result()
-        
+
         self.assertTrue(requests_mocker.called)
-        request = requests_mocker.last_request        
+        request = requests_mocker.last_request
         self.assertEqual(request._request.headers["User-Agent"], "django-esi v1.0.0")
 
 
@@ -642,7 +642,7 @@ class TestRequestsClientPlus(TestCase):
         obj.user_agent = "abc"
         result = obj.request(
             {
-                "method": "GET", 
+                "method": "GET",
                 "url": "https://esi.evetech.net/v1/status/"
             }
         )
@@ -654,7 +654,7 @@ class TestRequestsClientPlus(TestCase):
         obj.user_agent = "abc"
         result = obj.request(
             {
-                "method": "GET", 
+                "method": "GET",
                 "url": "https://esi.evetech.net/v1/status/",
                 "headers": {"From": "dummy@example.com"}
             }
@@ -664,14 +664,14 @@ class TestRequestsClientPlus(TestCase):
 
     def test_no_user_agent(self):
         """When no user agent is defined, leave the existing header intact"""
-        obj = RequestsClientPlus()        
+        obj = RequestsClientPlus()
         result = obj.request(
             {
-                "method": "GET", 
+                "method": "GET",
                 "url": "https://esi.evetech.net/v1/status/",
                 "headers": {"From": "dummy@example.com"}
             }
-        )        
+        )
         self.assertEqual(result.future.request.headers["From"], "dummy@example.com")
         self.assertNotIn("User-Agent", result.future.request.headers)
 
@@ -679,9 +679,9 @@ class TestRequestsClientPlus(TestCase):
 @patch(MODULE_PATH + ".__title__", "django-esi")
 @patch(MODULE_PATH + ".__version__", "1.0.0")
 @requests_mock.Mocker()
-class TestEsiClientFactoryAppText(TestCase):    
+class TestEsiClientFactoryAppText(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:    
+    def setUpClass(cls) -> None:
         super().setUpClass()
         cls.spec = _load_json_file(SWAGGER_SPEC_PATH_MINIMAL)
         cls.status_response = {
@@ -689,7 +689,7 @@ class TestEsiClientFactoryAppText(TestCase):
             "server_version": "1132976",
             "start_time": "2017-01-02T12:34:56Z"
         }
-            
+
     @patch(MODULE_PATH + ".app_settings.ESI_USER_CONTACT_EMAIL", None)
     def test_defaults(self, requests_mocker):
         requests_mocker.register_uri(
@@ -701,9 +701,9 @@ class TestEsiClientFactoryAppText(TestCase):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
-        
+
         client = esi_client_factory()
-        operation = client.Status.get_status()        
+        operation = client.Status.get_status()
         self.assertEqual(
             operation.future.request.headers["User-Agent"], "django-esi v1.0.0"
         )
@@ -719,9 +719,9 @@ class TestEsiClientFactoryAppText(TestCase):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
-        
+
         client = esi_client_factory(app_info_text="my-app v1.0.0")
-        operation = client.Status.get_status()        
+        operation = client.Status.get_status()
         self.assertEqual(
             operation.future.request.headers["User-Agent"], "my-app v1.0.0"
         )
@@ -737,11 +737,11 @@ class TestEsiClientFactoryAppText(TestCase):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
-        
+
         client = esi_client_factory(app_info_text="my-app v1.0.0")
-        operation = client.Status.get_status()        
+        operation = client.Status.get_status()
         self.assertEqual(
-            operation.future.request.headers["User-Agent"], 
+            operation.future.request.headers["User-Agent"],
             "my-app v1.0.0 dummy@example.com"
         )
 
@@ -756,19 +756,19 @@ class TestEsiClientFactoryAppText(TestCase):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
-        
+
         client = esi_client_factory()
-        operation = client.Status.get_status()        
+        operation = client.Status.get_status()
         self.assertEqual(
-            operation.future.request.headers["User-Agent"], 
+            operation.future.request.headers["User-Agent"],
             "django-esi v1.0.0 dummy@example.com"
         )
 
 
 @requests_mock.Mocker()
-class TestEsiClientProviderAppText(TestCase):    
+class TestEsiClientProviderAppText(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:    
+    def setUpClass(cls) -> None:
         super().setUpClass()
         cls.spec = _load_json_file(SWAGGER_SPEC_PATH_MINIMAL)
         cls.status_response = {
@@ -790,9 +790,9 @@ class TestEsiClientProviderAppText(TestCase):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
-                
+
         client = EsiClientProvider().client
-        operation = client.Status.get_status()        
+        operation = client.Status.get_status()
         self.assertEqual(
             operation.future.request.headers["User-Agent"], "django-esi v1.0.0"
         )
@@ -808,10 +808,10 @@ class TestEsiClientProviderAppText(TestCase):
         requests_mocker.register_uri(
             'GET', url="https://esi.evetech.net/v1/status/", json=self.status_response
         )
-        
+
         client = EsiClientProvider(app_info_text="my-app v1.0.0").client
-        operation = client.Status.get_status()        
+        operation = client.Status.get_status()
         self.assertEqual(
-            operation.future.request.headers["User-Agent"], 
+            operation.future.request.headers["User-Agent"],
             "my-app v1.0.0 dummy@example.com"
         )

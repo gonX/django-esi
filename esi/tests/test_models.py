@@ -31,7 +31,7 @@ class TestScope(TestCase):
             "dummy_scope",
             str(x)
         )
-    
+
     def test_friendly_name(self):
         x = Scope(name='dummy_scope')
         self.assertEqual(
@@ -42,7 +42,7 @@ class TestScope(TestCase):
 
 class TestToken(TestCase):
     """tests for model Token"""
-    
+
     def setUp(self):
 
         character_id = 1000
@@ -58,9 +58,9 @@ class TestToken(TestCase):
                 character_id=character_id,
                 character_name=character_name,
                 scopes=['esi-universe.read_structures.v1']
-            ), 
+            ),
             self.user
-        )                
+        )
 
     def test_str(self):
         self.assertEqual(
@@ -83,9 +83,9 @@ class TestToken(TestCase):
     def test_get_token_fail(self):
         t = Token.get_token(1000, ['esi-universe.read_structures.v9000'])
         self.assertEqual(t, False)
-        
+
     def test_need_refresh_token_for_refresh(self):
-        self.assertTrue(self.token.can_refresh)        
+        self.assertTrue(self.token.can_refresh)
         self.token.refresh_token = None
         self.assertFalse(self.token.can_refresh)
 
@@ -127,7 +127,7 @@ class TestToken(TestCase):
     @patch('esi.models.HTTPBasicAuth', autospec=True)
     @patch('esi.models.OAuth2Session', autospec=True)
     def test_refresh_normal_2(self, mock_OAuth2Session, mock_HTTPBasicAuth):
-        mock_session = Mock()        
+        mock_session = Mock()
         mock_session.refresh_token.return_value = {
             'access_token': 'access_token_2',
             'refresh_token': 'refresh_token_2'
@@ -155,13 +155,13 @@ class TestToken(TestCase):
     @patch('esi.models.OAuth2Session', autospec=True)
     @patch('esi.models.app_settings.ESI_TOKEN_VALID_DURATION', 120)
     def test_valid_access_token_refresh(self, mock_OAuth2Session, mock_HTTPBasicAuth):
-        mock_session = Mock()        
+        mock_session = Mock()
         mock_session.refresh_token.return_value = {
             'access_token': 'access_token_new',
             'refresh_token': 'refresh_token_2'
         }
         mock_OAuth2Session.return_value = mock_session
-        
+
         self.token.created -= timedelta(121)
         self.assertTrue(self.token.expired)
         self.assertEqual(
@@ -209,7 +209,7 @@ class TestToken(TestCase):
         mock_session.refresh_token.side_effect = MissingTokenError
         with self.assertRaises(IncompleteResponseError):
             self.token.refresh(mock_session, mock_auth)
-            
+
         mock_session.refresh_token.side_effect = InvalidClientError
         with self.assertRaises(ImproperlyConfigured):
             self.token.refresh(mock_session, mock_auth)
@@ -226,7 +226,7 @@ class TestToken(TestCase):
         mock_session = Mock()
         mock_session.request.return_value.json.return_value = "Johnny"
         mock_OAuth2Session.return_value = mock_session
-        
+
         data = self.token.get_token_data(access_token='access_token_2')
         self.assertEqual(data, "Johnny")
         self.assertEqual(mock_OAuth2Session.call_count, 1)
@@ -257,18 +257,18 @@ class TestToken(TestCase):
     @patch('esi.models.OAuth2Session', autospec=True)
     @patch('esi.models.Token.get_token_data')
     def test_update_token_data_normal_2(
-        self, 
-        mock_get_token_data, 
-        mock_OAuth2Session, 
+        self,
+        mock_get_token_data,
+        mock_OAuth2Session,
         mock_HTTPBasicAuth
     ):
-        mock_session = Mock()        
+        mock_session = Mock()
         mock_session.refresh_token.return_value = {
             'access_token': 'access_token_2',
             'refresh_token': 'refresh_token_2'
         }
         mock_OAuth2Session.return_value = mock_session
-  
+
         mock_get_token_data.return_value = {
             'CharacterID': 99,
             'CharacterName': 'CharacterName',
@@ -283,7 +283,7 @@ class TestToken(TestCase):
             self.token.character_id,
             99
         )
-        
+
     @patch('esi.models.Token.get_token_data')
     def test_update_token_data_normal_3(self, mock_get_token_data):
         mock_get_token_data.return_value = {
@@ -292,7 +292,7 @@ class TestToken(TestCase):
             'CharacterOwnerHash': 'CharacterOwnerHash',
             'TokenType': 'Character',
         }
-        self.token.update_token_data(commit=False)        
+        self.token.update_token_data(commit=False)
         self.assertEqual(
             self.token.character_id,
             99
@@ -312,13 +312,13 @@ class TestToken(TestCase):
 
     @patch('esi.models.Token.get_token_data', auto_spec=True)
     def test_update_token_data_error(
-        self, 
+        self,
         mock_get_token_data
     ):
         self.token.refresh_token = None
         self.token.created -= timedelta(121)
         with self.assertRaises(TokenExpiredError):
-            self.token.update_token_data()    
+            self.token.update_token_data()
 
 
 class TestCallbackRedirect(TestCase):

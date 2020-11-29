@@ -22,7 +22,7 @@ def sso_redirect(request, scopes=None, return_to=None):
     """
     logger.debug(
         "Initiating redirect of %s session %s",
-        request.user, 
+        request.user,
         request.session.session_key[:5] if request.session.session_key else '[no key]'
     )
     if scopes is None:
@@ -46,8 +46,8 @@ def sso_redirect(request, scopes=None, return_to=None):
         url = request.get_full_path()
 
     oauth = OAuth2Session(
-        app_settings.ESI_SSO_CLIENT_ID, 
-        redirect_uri=app_settings.ESI_SSO_CALLBACK_URL, 
+        app_settings.ESI_SSO_CLIENT_ID,
+        redirect_uri=app_settings.ESI_SSO_CALLBACK_URL,
         scope=scopes
     )
     redirect_url, state = oauth.authorization_url(app_settings.ESI_OAUTH_LOGIN_URL)
@@ -57,8 +57,8 @@ def sso_redirect(request, scopes=None, return_to=None):
     )
     logger.debug(
         "Redirecting %s session %s to SSO. Callback will be redirected to %s",
-        request.user, 
-        request.session.session_key[:5], 
+        request.user,
+        request.session.session_key[:5],
         url
     )
     return redirect(redirect_url)
@@ -66,12 +66,12 @@ def sso_redirect(request, scopes=None, return_to=None):
 
 def receive_callback(request):
     """
-    Parses SSO callback, validates, retrieves :model:`esi.Token`, 
+    Parses SSO callback, validates, retrieves :model:`esi.Token`,
     and internally redirects to the target url.
     """
     logger.debug(
-        "Received callback for %s session %s", 
-        request.user, 
+        "Received callback for %s session %s",
+        request.user,
         request.session.session_key[:5]
     )
     # make sure request has required parameters
@@ -92,8 +92,8 @@ def receive_callback(request):
     callback.save()
     logger.debug(
         "Processed callback for %s session %s. Redirecting to %s",
-        request.user, 
-        request.session.session_key[:5], 
+        request.user,
+        request.session.session_key[:5],
         callback.url
     )
     return redirect(callback.url)

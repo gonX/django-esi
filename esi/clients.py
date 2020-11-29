@@ -36,19 +36,19 @@ RETRY_SLEEP_SECS = 1
 class CachingHttpFuture(HttpFuture):
     """
     Used to add caching to certain HTTP requests according to "Expires" header
-    """    
+    """
     def _cache_key(self):
         """
-        Generated the key name used to cache responses        
+        Generated the key name used to cache responses
         :return: formatted cache name
         """
         request = self.future.request
         str_hash = md5(
             (
-                request.method 
-                + request.url 
-                + str(request.params) 
-                + str(request.data) 
+                request.method
+                + request.url
+                + str(request.params)
+                + str(request.data)
                 + str(request.json)
             ).encode('utf-8')
         ).hexdigest()
@@ -69,7 +69,7 @@ class CachingHttpFuture(HttpFuture):
             return 0
 
     def results(self, **kwargs):
-        """Executes the request and returns the response from ESI for the current 
+        """Executes the request and returns the response from ESI for the current
         route. Response will include all pages if there are more available.
 
         Optional parameters:
@@ -80,36 +80,36 @@ class CachingHttpFuture(HttpFuture):
         # preserve original value
         _also_return_response = self.request_config.also_return_response
         # override to always get the raw response for expiry header
-        self.request_config.also_return_response = True  
-        
+        self.request_config.also_return_response = True
+
         if "page" in self.operation.params:
             current_page = 1
             total_pages = 1
-           
+
             # loop all pages and add data to output array
-            while current_page <= total_pages:  
-                self.future.request.params["page"] = current_page                
+            while current_page <= total_pages:
+                self.future.request.params["page"] = current_page
                 # will use cache if applicable
                 result, headers = self.result(**kwargs)
-                total_pages = int(headers.headers['X-Pages'])  
+                total_pages = int(headers.headers['X-Pages'])
                 # append to results list to be seamless to the client
-                results += result  
+                results += result
                 current_page += 1
         else:  # it doesn't so just return
             results, headers = self.result(**kwargs)
 
         # restore original value
-        self.request_config.also_return_response = _also_return_response  
+        self.request_config.also_return_response = _also_return_response
 
-        # obey the output 
-        if self.request_config.also_return_response:  
+        # obey the output
+        if self.request_config.also_return_response:
             return results, headers
         else:
             return results
 
     def results_localized(self, languages: list = None, **kwargs) -> dict:
         """Executes the request and returns the response from ESI for all default
-        languages and pages (if any). This method returns a dict of all responses 
+        languages and pages (if any). This method returns a dict of all responses
         with the language code as keys.
 
         Optional parameters:
@@ -124,9 +124,9 @@ class CachingHttpFuture(HttpFuture):
                 if lang not in app_settings.ESI_LANGUAGES:
                     raise ValueError('Invalid language code: %s' % lang)
                 my_languages.append(lang)
-        
+
         return {
-            language: self.results(language=language, **kwargs) 
+            language: self.results(language=language, **kwargs)
             for language in my_languages
         }
 
@@ -137,16 +137,16 @@ class CachingHttpFuture(HttpFuture):
         Optional parameters:
         - timeout: timeout for request to ESI in seconds, overwrites default
         - retries: max number of retries, overwrites default
-        """        
+        """
         if 'language' in kwargs.keys():
             # this parameter is not supported by bravado, so we can't pass it on
             self.future.request.params['language'] = str(kwargs.pop('language'))
 
-        if 'retries' in kwargs.keys():            
+        if 'retries' in kwargs.keys():
             max_retries = int(kwargs.pop('retries'))
         else:
             max_retries = int(app_settings.ESI_SERVER_ERROR_MAX_RETRIES)
-        
+
         max_retries = max(0, max_retries)
 
         if 'timeout' not in kwargs:
@@ -154,12 +154,12 @@ class CachingHttpFuture(HttpFuture):
                 app_settings.ESI_REQUESTS_CONNECT_TIMEOUT,
                 app_settings.ESI_REQUESTS_READ_TIMEOUT
             )
-        
+
         if (
-            app_settings.ESI_CACHE_RESPONSE 
-            and self.future.request.method == 'GET' 
+            app_settings.ESI_CACHE_RESPONSE
+            and self.future.request.method == 'GET'
             and self.operation is not None
-        ):           
+        ):
             result = None
             response = None
             cache_key = self._cache_key()
@@ -182,10 +182,10 @@ class CachingHttpFuture(HttpFuture):
 
             if not cached:
                 # preserve original value
-                _also_return_response = self.request_config.also_return_response  
+                _also_return_response = self.request_config.also_return_response
                 # override to always get the raw response for expiry header
                 self.request_config.also_return_response = True
-                
+
                 retries = 0
                 while retries <= max_retries:
                     try:
@@ -194,9 +194,9 @@ class CachingHttpFuture(HttpFuture):
                             logger.info(
                                 'Fetching from ESI: %s%s%s',
                                 self.future.request.url,
-                                f' - language {params["language"]}' 
+                                f' - language {params["language"]}'
                                 if 'language' in params else '',
-                                f' - page {params["page"]}' 
+                                f' - page {params["page"]}'
                                 if 'page' in params else ''
                             )
                         logger.debug(
@@ -219,23 +219,23 @@ class CachingHttpFuture(HttpFuture):
                     ) as ex:
                         if retries < max_retries:
                             logger.warning(
-                                "ESI error (Retry: %d/%d)", 
-                                retries, 
+                                "ESI error (Retry: %d/%d)",
+                                retries,
                                 max_retries,
                                 exc_info=True
                             )
                             if retries > 0:
                                 wait_secs = (
-                                    app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR 
+                                    app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR
                                     * (2 ** (retries - 1))
                                 )
                                 sleep(wait_secs)
                             retries += 1
                         else:
                             raise ex
-                
+
                 # restore original value
-                self.request_config.also_return_response = _also_return_response  
+                self.request_config.also_return_response = _also_return_response
 
                 if response and 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
@@ -305,8 +305,8 @@ class RequestsClientPlus(requests_client.RequestsClient):
             current_headers = request_params.get("headers", dict())
             new_header = {"User-Agent": str(self.user_agent)}
             request_params["headers"] = {**current_headers, **new_header}
-        
-        return super().request(request_params, operation, request_config)        
+
+        return super().request(request_params, operation, request_config)
 
 
 def build_cache_name(name):
@@ -362,10 +362,10 @@ def get_spec(name, http_client=None, config=None):
 
 def build_spec(base_version, http_client=None, **kwargs):
     """
-    Generates the Spec used to initialize a SwaggerClient, 
+    Generates the Spec used to initialize a SwaggerClient,
     supporting mixed resource versions
     :param http_client: :class:`bravado.requests_client.RequestsClient`
-    :param base_version: Version to base the spec on. 
+    :param base_version: Version to base the spec on.
     Any resource without an explicit version will be this.
     :param kwargs: Explicit resource versions, by name (eg Character='v4')
     :return: :class:`bravado_core.spec.Spec`
@@ -416,37 +416,37 @@ def esi_client_factory(
     :param token: :class:`esi.Token` used to access authenticated endpoints.
     :param datasource: Name of the ESI datasource to access.
     :param spec_file: Absolute path to a swagger spec file to load.
-    :param version: Base ESI API version. Accepted values are 'legacy', 'latest', 
+    :param version: Base ESI API version. Accepted values are 'legacy', 'latest',
     :param app_info_text: :str: Text identifying the application using ESI
-    which will be included in the User-Agent header. Should contain name and version 
-    of the application using ESI. e.g. `"my-app v1.0.0"`. 
+    which will be included in the User-Agent header. Should contain name and version
+    of the application using ESI. e.g. `"my-app v1.0.0"`.
     Note that spaces are used as delimiter.
-    :param kwargs: Explicit resource versions to build, in the form Character='v4'. 
+    :param kwargs: Explicit resource versions to build, in the form Character='v4'.
     Same values accepted as version.
     :return: :class:`bravado.client.SwaggerClient`
 
-    If a spec_file is specified, specific versioning is not available. 
+    If a spec_file is specified, specific versioning is not available.
     Meaning the version and resource version kwargs
     are ignored in favour of the versions available in the spec_file.
-    """    
+    """
     if app_settings.ESI_INFO_LOGGING_ENABLED:
         logger.info('Generating an ESI client...')
-    
+
     client = RequestsClientPlus()
     user_agent = (
         str(app_info_text) if app_info_text else f"{__title__} v{__version__}"
     )
     if app_settings.ESI_USER_CONTACT_EMAIL:
         user_agent += f" {app_settings.ESI_USER_CONTACT_EMAIL}"
-    
+
     client.user_agent = user_agent
 
     my_http_adapter = HTTPAdapter(
-        pool_maxsize=app_settings.ESI_CONNECTION_POOL_MAXSIZE, 
+        pool_maxsize=app_settings.ESI_CONNECTION_POOL_MAXSIZE,
         max_retries=app_settings.ESI_CONNECTION_ERROR_MAX_RETRIES
     )
     client.session.mount('https://', my_http_adapter)
-        
+
     if token or datasource:
         client.authenticator = TokenAuthenticator(token=token, datasource=datasource)
 
@@ -481,7 +481,7 @@ def minimize_spec(spec_dict, operations=None, resources=None):
     for path_name, path in spec_dict['paths'].items():
         for method, data in path.items():
             if (
-                data['operationId'] in operations 
+                data['operationId'] in operations
                 or any(tag in resources for tag in data['tags'])
             ):
                 if path_name not in minimized['paths']:
@@ -495,28 +495,28 @@ class EsiClientProvider:
     """Class for providing a single ESI client instance for the whole app"""
 
     _client = None
-    
+
     def __init__(
-        self, 
-        datasource=None, 
-        spec_file=None, 
+        self,
+        datasource=None,
+        spec_file=None,
         version=None,
-        app_info_text=None, 
+        app_info_text=None,
         **kwargs
     ):
-        """        
+        """
         :param datasource: Name of the ESI datasource to access.
         :param spec_file: Absolute path to a swagger spec file to load.
-        :param version: Base ESI API version. 
+        :param version: Base ESI API version.
         Accepted values are 'legacy', 'latest', 'dev', or 'vX' where X is a number.
         :param app_info_text: :str: Text identifying the application using ESI
-        which will be included in the User-Agent header. Should contain name 
-        and version of the application using ESI. e.g. `"my-app v1.0.0"`. 
+        which will be included in the User-Agent header. Should contain name
+        and version of the application using ESI. e.g. `"my-app v1.0.0"`.
         Note that spaces are used as delimiter.
-        :param kwargs: Explicit resource versions to build, 
-        in the form Character='v4'. Same values accepted as version.        
+        :param kwargs: Explicit resource versions to build,
+        in the form Character='v4'. Same values accepted as version.
 
-        If a spec_file is specified, specific versioning is not available. 
+        If a spec_file is specified, specific versioning is not available.
         Meaning the version and resource version kwargs
         are ignored in favour of the versions available in the spec_file.
         """
@@ -530,7 +530,7 @@ class EsiClientProvider:
     def client(self):
         if self._client is None:
             self._client = esi_client_factory(
-                datasource=self._datasource,                
+                datasource=self._datasource,
                 spec_file=self._spec_file,
                 version=self._version,
                 app_info_text=self._app_text,

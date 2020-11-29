@@ -1,6 +1,6 @@
 from django.conf import settings
 
-# These are required for SSO to function. 
+# These are required for SSO to function.
 # Can be left blank if settings.DEBUG is set to True
 ESI_SSO_CLIENT_ID = getattr(settings, 'ESI_SSO_CLIENT_ID', None)
 ESI_SSO_CLIENT_SECRET = getattr(settings, 'ESI_SSO_CLIENT_SECRET', None)
@@ -27,7 +27,7 @@ ESI_INFO_LOGGING_ENABLED = getattr(settings, 'ESI_INFO_LOGGING_ENABLED', False)
 # Set log level for libraries like bravado and urlib3
 ESI_LOG_LEVEL_LIBRARIES = str(getattr(settings, 'ESI_LOG_LEVEL_LIBRARIES', 'INFO'))
 
-# Set contact email address of server owner, 
+# Set contact email address of server owner,
 # which will be included in the User-Agent header of every request
 ESI_USER_CONTACT_EMAIL = getattr(settings, 'ESI_USER_CONTACT_EMAIL', None)
 
@@ -48,7 +48,7 @@ ESI_SERVER_ERROR_BACKOFF_FACTOR = getattr(
     settings, 'ESI_SERVER_ERROR_BACKOFF_FACTOR', 0.2
 )
 
-# Default timeouts for all requests to ESI. 
+# Default timeouts for all requests to ESI.
 # Can be overwritten by passing "timeout" with result()
 ESI_REQUESTS_CONNECT_TIMEOUT = getattr(settings, 'ESI_REQUESTS_CONNECT_TIMEOUT', 5)
 ESI_REQUESTS_READ_TIMEOUT = getattr(settings, 'ESI_REQUESTS_READ_TIMEOUT', 30)
