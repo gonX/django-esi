@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+## [2.0.4] - 2020-11-11
+
+### Added
+
+- Adds a User-Agent header as per the ESI Developer best practice https://gitlab.com/allianceauth/django-esi/-/merge_requests/42
+
+### Developer
+
+- Code Style changes, Implementing Pre-Commit Flake8 Checks https://gitlab.com/allianceauth/django-esi/-/merge_requests/43
+
 ## [2.0.3] - 2020-11-11
 
 ### Fixed
