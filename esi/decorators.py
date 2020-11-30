@@ -19,15 +19,15 @@ def _check_callback(request):
         token = Token.objects.get(pk=model.token.pk)
         model.delete()
         logger.debug(
-            "Retrieved new token from callback for %s session %s", 
-            request.user, 
+            "Retrieved new token from callback for %s session %s",
+            request.user,
             request.session.session_key[:5])
         return token
-    
+
     except (CallbackRedirect.DoesNotExist, Token.DoesNotExist, AttributeError):
         logger.debug(
             "No callback for %s session %s",
-            request.user, 
+            request.user,
             request.session.session_key[:5],
             exc_info=True
         )
@@ -58,7 +58,7 @@ def tokens_required(scopes='', new=False):
                 # ensure user logged in to check existing tokens
                 if not request.user.is_authenticated:
                     logger.debug(
-                        "Session %s is not logged in. Redirecting to login.", 
+                        "Session %s is not logged in. Redirecting to login.",
                         request.session.session_key[:5]
                     )
                     from django.contrib.auth.views import redirect_to_login
@@ -74,7 +74,7 @@ def tokens_required(scopes='', new=False):
                 if tokens.exists():
                     logger.debug(
                         "Retrieved %s tokens for %s session %s",
-                        tokens.count(), 
+                        tokens.count(),
                         request.user,
                         request.session.session_key[:5]
                     )
@@ -96,7 +96,7 @@ def tokens_required(scopes='', new=False):
 
 def token_required(scopes='', new=False):
     """
-    Decorator for views which supplies a single, 
+    Decorator for views which supplies a single,
     user-selected token for the view to process.
     Same parameters as tokens_required.
     """
@@ -109,8 +109,8 @@ def token_required(scopes='', new=False):
             token = _check_callback(request)
             if token and new:
                 logger.debug(
-                    "Got new token from %s session %s. Returning to view.", 
-                    request.user, 
+                    "Got new token from %s session %s. Returning to view.",
+                    request.user,
                     request.session.session_key[:5]
                 )
                 return view_func(request, token, *args, **kwargs)
@@ -136,9 +136,9 @@ def token_required(scopes='', new=False):
                         # ensure token belongs to this user and has required scopes
                         if (
                             (
-                                (token.user and token.user == request.user) 
+                                (token.user and token.user == request.user)
                                 or not token.user
-                            ) 
+                            )
                             and Token.objects
                             .filter(pk=token_pk)
                             .require_scopes(scopes)
@@ -152,7 +152,7 @@ def token_required(scopes='', new=False):
                             return view_func(request, token, *args, **kwargs)
 
                     except Token.DoesNotExist:
-                        logger.debug("Token %s not found.", token_pk)                       
+                        logger.debug("Token %s not found.", token_pk)
 
             if not new:
                 # present the user with token choices
@@ -171,15 +171,15 @@ def token_required(scopes='', new=False):
                 else:
                     logger.debug(
                         "No tokens found for %s session %s with scopes %s",
-                        request.user, 
+                        request.user,
                         request.session.session_key[:5],
                         scopes
                     )
 
             # prompt the user to add a new token
             logger.debug(
-                "Redirecting %s session %s to SSO.", 
-                request.user, 
+                "Redirecting %s session %s to SSO.",
+                request.user,
                 request.session.session_key[:5]
             )
             from esi.views import sso_redirect
@@ -192,7 +192,7 @@ def token_required(scopes='', new=False):
 
 def single_use_token(scopes='', new=False):
     """
-    Decorator for views which supplies a single use token granted via sso login 
+    Decorator for views which supplies a single use token granted via sso login
     regardless of login state.
     Same parameters as tokens_required.
     """

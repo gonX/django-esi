@@ -23,32 +23,32 @@ redirect_url = 'https://www.example.com' + redirect_sub_url
 
 class TestSsoCallbackView(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
-        )        
+        )
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name=self.user.username,
                 scopes=['abc', 'xyz', '123']
-            ), 
+            ),
             self.user
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
-        
+
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
     @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)
     @patch('esi.views.app_settings.ESI_OAUTH_LOGIN_URL', ESI_OAUTH_LOGIN_URL)
     @patch('esi.views.OAuth2Session', autospec=True)
-    def test_redirect_to_url_no_scopes(self, mock_OAuth2Session):        
+    def test_redirect_to_url_no_scopes(self, mock_OAuth2Session):
         state = 'my_awesome_state'
         mock_OAuth2Session.return_value.authorization_url.return_value = \
             (redirect_url, state)
-        
+
         request = self.factory.get(redirect_url)
         request.user = self.user
         middleware = SessionMiddleware()
@@ -76,17 +76,17 @@ class TestSsoCallbackView(TestCase):
     @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)
     @patch('esi.views.app_settings.ESI_OAUTH_LOGIN_URL', ESI_OAUTH_LOGIN_URL)
     @patch('esi.views.OAuth2Session', autospec=True)
-    def test_redirect_to_url_w_single_scope(self, mock_OAuth2Session):        
+    def test_redirect_to_url_w_single_scope(self, mock_OAuth2Session):
         state = 'my_awesome_state'
         mock_OAuth2Session.return_value.authorization_url.return_value = \
             (redirect_url, state)
-        
+
         request = self.factory.get(redirect_url)
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-        
+
         http_response = sso_redirect(request, scopes='abc')
         self.assertTrue(mock_OAuth2Session.called)
         args, kwargs = mock_OAuth2Session.call_args
@@ -107,17 +107,17 @@ class TestSsoCallbackView(TestCase):
     @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)
     @patch('esi.views.app_settings.ESI_OAUTH_LOGIN_URL', ESI_OAUTH_LOGIN_URL)
     @patch('esi.views.OAuth2Session', autospec=True)
-    def test_redirect_to_url_w_multiple_scopes(self, mock_OAuth2Session):        
+    def test_redirect_to_url_w_multiple_scopes(self, mock_OAuth2Session):
         state = 'my_awesome_state'
         mock_OAuth2Session.return_value.authorization_url.return_value = \
             (redirect_url, state)
-        
+
         request = self.factory.get(redirect_url)
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-        
+
         http_response = sso_redirect(request, scopes=['abc', 'def'])
         self.assertTrue(mock_OAuth2Session.called)
         args, kwargs = mock_OAuth2Session.call_args
@@ -138,13 +138,13 @@ class TestSsoCallbackView(TestCase):
     @patch('esi.views.app_settings.ESI_OAUTH_LOGIN_URL', ESI_OAUTH_LOGIN_URL)
     @patch('esi.views.reverse', autospec=True)
     @patch('esi.views.OAuth2Session', autospec=True)
-    def test_redirect_to_view_no_scopes(self, mock_OAuth2Session, mock_reverse):        
+    def test_redirect_to_view_no_scopes(self, mock_OAuth2Session, mock_reverse):
         state = 'my_awesome_state'
         mock_OAuth2Session.return_value.authorization_url.return_value = \
             (redirect_url, state)
         my_view_url = '/my_view/'
         mock_reverse.return_value = my_view_url
-        
+
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
@@ -169,7 +169,7 @@ class TestSsoCallbackView(TestCase):
         self.assertEqual(callback_redirect.state, state)
 
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
-    @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)    
+    @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)
     @patch('esi.views.reverse')
     def test_sso_redirect_return_to(self, mock_reverse):
         mock_reverse.return_value = '/callback3/'
@@ -191,12 +191,12 @@ class TestSsoCallbackView(TestCase):
         self.assertEqual(callback_redirect.session_key, request.session.session_key)
 
     @patch('esi.views.app_settings.ESI_SSO_CLIENT_ID', ESI_SSO_CLIENT_ID)
-    @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)        
-    def test_sso_redirect_start_session(self):        
+    @patch('esi.views.app_settings.ESI_SSO_CALLBACK_URL', ESI_SSO_CALLBACK_URL)
+    def test_sso_redirect_start_session(self):
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
         middleware = SessionMiddleware()
-        middleware.process_request(request)        
+        middleware.process_request(request)
 
         sso_redirect(request)
 
@@ -208,37 +208,37 @@ class TestSsoCallbackView(TestCase):
         self.assertEqual(callback_redirect.url, '/callback2/')
         self.assertEqual(callback_redirect.session_key, request.session.session_key)
 
-    
+
 class TesReceiveCallbackView(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
         )
-        
+
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name=self.user.username,
                 scopes=['abc', 'xyz', '123']
-            ), 
+            ),
             self.user
         )
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
 
     @patch('esi.managers.TokenManager.create_from_request')
-    def test_normal(self, mock_create_from_request):                
+    def test_normal(self, mock_create_from_request):
         mock_create_from_request.return_value = self.token
-        
+
         request = self.factory.get('https://www.example.com?code=abc&state=123')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-        
+
         callback_redirect = CallbackRedirect.objects.create(
             session_key=request.session.session_key,
             state='123',
@@ -250,52 +250,52 @@ class TesReceiveCallbackView(TestCase):
         self.assertEqual(http_response.url, redirect_url)
         self.assertEqual(callback_redirect.token, self.token)
 
-    def test_missing_code(self):            
+    def test_missing_code(self):
         request = self.factory.get('https://www.example.com?state=123')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-          
+
         http_response = receive_callback(request)
         self.assertIsInstance(http_response, HttpResponseBadRequest)
-        
-    def test_missing_state(self):            
+
+    def test_missing_state(self):
         request = self.factory.get('https://www.example.com?code=abc')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-          
+
         http_response = receive_callback(request)
         self.assertIsInstance(http_response, HttpResponseBadRequest)
-        
-    def test_missing_callback(self):            
+
+    def test_missing_callback(self):
         request = self.factory.get('https://www.example.com?code=abc&state=123')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-          
+
         with self.assertRaises(Http404):
             receive_callback(request)
-        
+
 
 class TestSelectTokenView(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
         )
-        
+
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
                 character_name=self.user.username,
                 scopes=['abc', 'xyz', '123']
-            ), 
+            ),
             self.user
         )
         self.factory = RequestFactory()
@@ -304,7 +304,7 @@ class TestSelectTokenView(TestCase):
     @patch('esi.views.render', autospec=True)
     def test_first_call(self, mock_render):
         mock_render.return_value = 'mock_render_called'
-        
+
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
         middleware = SessionMiddleware()
@@ -320,7 +320,7 @@ class TestSelectTokenView(TestCase):
     @patch('esi.views.render', autospec=True)
     def test_second_call(self, mock_render):
         mock_render.return_value = 'mock_render_called'
-        
+
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
         middleware = SessionMiddleware()

@@ -143,11 +143,11 @@ class TokenManager(models.Manager):
         # perform code exchange
         logger.debug("Creating new token from code %s", code[:-5])
         oauth = OAuth2Session(
-            app_settings.ESI_SSO_CLIENT_ID, 
+            app_settings.ESI_SSO_CLIENT_ID,
             redirect_uri=app_settings.ESI_SSO_CALLBACK_URL
         )
         token = oauth.fetch_token(
-            app_settings.ESI_TOKEN_URL, 
+            app_settings.ESI_TOKEN_URL,
             client_secret=app_settings.ESI_SSO_CLIENT_SECRET,
             code=code
         )
@@ -175,7 +175,7 @@ class TokenManager(models.Manager):
                     scope = Scope.objects.get(name=s)
                     model.scopes.add(scope)
                 except Scope.DoesNotExist:
-                    # This scope isn't included in a data migration. 
+                    # This scope isn't included in a data migration.
                     # Create a placeholder until it updates.
                     try:
                         help_text = s.split('.')[1].replace('_', ' ').capitalize()
@@ -218,12 +218,12 @@ class TokenManager(models.Manager):
         :return: :class:`esi.models.Token`
         """
         logger.debug(
-            "Creating new token for %s session %s", 
-            request.user, 
+            "Creating new token for %s session %s",
+            request.user,
             request.session.session_key[:5]
         )
         code = request.GET.get('code')
-        # attach a user during creation for some functionality in a post_save created 
+        # attach a user during creation for some functionality in a post_save created
         # receiver I'm working on elsewhere
         model = self.create_from_code(
             code, user=request.user if request.user.is_authenticated else None

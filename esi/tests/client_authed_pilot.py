@@ -4,7 +4,7 @@
 This script is doing an authed request and required at least one valid token to be stored in the database. To create a valid token you can simple run through
 the esi test app once.
 
-Run this script directly. Make sure to also set the environment variable 
+Run this script directly. Make sure to also set the environment variable
 DJANGO_PROJECT_PATH and DJANGO_SETTINGS_MODULE to match your setup:
 
 You can see the result in your main log file of your Django installation.
@@ -46,7 +46,7 @@ logger = logging.getLogger('__name__')
 logger.level = logging.DEBUG
 
 
-def main():    
+def main():
     token = Token.objects.filter(scopes__name='esi-characters.read_medals.v1').first()
     response = (
         esi.client.Character
@@ -56,7 +56,7 @@ def main():
         )
         .result()
     )
-    
+
 if __name__ == '__main__':
     print('Script started...')
     main()

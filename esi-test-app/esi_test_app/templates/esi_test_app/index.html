@@ -7,31 +7,31 @@
     <p>
         Welcome to esi-test-app!
     </p>
-    <p>     
+    <p>
         The purpose of this app is to allow testing of features of the django-esi app that require user interaction and can therefore not be tested with automated unit tests.<br>
-        This test will try to first acquire an ESI token for the current user and then call an ESI endpoint with that token. 
-    </p>    
-    
+        This test will try to first acquire an ESI token for the current user and then call an ESI endpoint with that token.
+    </p>
+
     <p>
             <a href="{% url 'esi_test_app:test_single_use_token' %}">
                 Run test 1 - single_use_token
             </a>
     </p>
 
-    {% if request.user.is_authenticated == False %}            
-        
+    {% if request.user.is_authenticated == False %}
+
         <p>
-            For running test 2 you need to be logged in with a staff account. Click 
+            For running test 2 you need to be logged in with a staff account. Click
             <a href="{% url 'admin:login' %}?next={% url 'esi_test_app:index' %}">here</a>
              to login.
             </p>
 
     {% else%}
         <p>
-            You are logged in as user: <b>{{ request.user.username }}</b> 
+            You are logged in as user: <b>{{ request.user.username }}</b>
             <a href="{% url 'admin:logout' %}?next={% url 'esi_test_app:index' %}">[Logout]
             </a>
-        </p>    
+        </p>
 
         <p>
             <strong>Important!</strong>
@@ -43,13 +43,13 @@
                 <li><code> {{ scope }} </li></code>
             {% endfor%}
         </ul>
-            
+
         <p>
             <a href="{% url 'esi_test_app:test_token_required_1' %}">
                 Run test 2 - token_required
             </a>
-        </p>        
-        
+        </p>
+
     {% endif %}
 
 {% endblock %}

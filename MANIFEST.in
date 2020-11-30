@@ -4,4 +4,3 @@ recursive-include esi/static *
 recursive-include esi/templates *
 recursive-exclude esi-test-app *
 recursive-exclude esi/tests *
-

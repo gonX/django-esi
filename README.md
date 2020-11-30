@@ -8,6 +8,7 @@ Django app for easy access to the EVE Swagger Interface (ESI)
 [![license](https://img.shields.io/badge/license-GPLv3-green)](https://pypi.org/project/django-esi/)
 [![pipeline-status](https://gitlab.com/allianceauth/django-esi/badges/master/pipeline.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
 [![coverage](https://gitlab.com/allianceauth/django-esi/badges/master/coverage.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Chat on Discord](https://img.shields.io/discord/399006117012832262.svg)](https://discord.gg/fjnHAmk)
 
 ## Contents
@@ -27,7 +28,7 @@ Django app for easy access to the EVE Swagger Interface (ESI)
 
 Django-esi is a Django app that provides an interface for easy access to the EVE Swagger Interface (ESI), the official API for the game [EVE Online](https://www.eveonline.com/).
 
-It is build upon [Bravado](https://github.com/Yelp/bravado) - a python client library for Swagger 2.0 services.  
+It is build upon [Bravado](https://github.com/Yelp/bravado) - a python client library for Swagger 2.0 services.
 
 Django-esi adds the following main functionalities to a Django site:
 
@@ -221,9 +222,9 @@ def main():
     # call the endpoint
     notifications = esi.client.Character.get_characters_character_id_notifications(
         # required parameter for endpoint
-        character_id = character_id,  
+        character_id = character_id,
         # provide a valid access token, which wil be refresh the token if required
-        token = token.valid_access_token()  
+        token = token.valid_access_token()
     ).results()
 
     # ... do stuff with the data
