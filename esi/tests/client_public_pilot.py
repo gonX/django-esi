@@ -1,7 +1,7 @@
 # flake8: noqa
 """script for testing client with live requests to ESI
 
-Run this script directly. Make sure to also set the environment variable 
+Run this script directly. Make sure to also set the environment variable
 DJANGO_PROJECT_PATH and DJANGO_SETTINGS_MODULE to match your setup:
 
 You can see the result in your main log file of your Django installation.
@@ -42,11 +42,11 @@ logger = logging.getLogger('__name__')
 logger.level = logging.DEBUG
 
 
-def main():    
+def main():
     # esi.client.Universe.get_universe_types().results()
     o = esi.client.Universe.get_universe_types_type_id(type_id=34562)
     o.results()
-    
+
 if __name__ == '__main__':
     print('Script started...')
     main()

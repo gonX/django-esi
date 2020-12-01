@@ -19,6 +19,11 @@ setup(
         'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
     ],
+    extras_require={
+        "testing": [
+            "requests-mock",
+        ]
+    },
     packages=find_packages(),
     include_package_data=True,
     license='GNU General Public License v3 (GPLv3)',
@@ -30,7 +35,7 @@ setup(
     author_email='adarnof@gmail.com',
     classifiers=[
         'Environment :: Web Environment',
-        'Framework :: Django',        
+        'Framework :: Django',
         'Framework :: Django :: 2.2',
         'Framework :: Django :: 3.0',
         'Framework :: Django :: 3.1',
@@ -38,7 +43,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',        
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',

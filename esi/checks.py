@@ -7,15 +7,15 @@ def check_sso_application_settings(*args, **kwargs):
     errors = []
     try:
         assert (
-            settings.ESI_SSO_CLIENT_ID 
-            and settings.ESI_SSO_CLIENT_SECRET 
+            settings.ESI_SSO_CLIENT_ID
+            and settings.ESI_SSO_CLIENT_SECRET
             and settings.ESI_SSO_CALLBACK_URL
         )
     except (AssertionError, AttributeError):
         if settings.DEBUG:
             errors.append(
                 Warning(
-                    'ESI SSO application settings are not configured.', 
+                    'ESI SSO application settings are not configured.',
                     hint='SSO features will not work.',
                     id='esi.W001'
                 )
