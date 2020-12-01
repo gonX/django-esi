@@ -92,7 +92,7 @@ class TokenQueryset(models.QuerySet):
             return self.none()
         tokens = self.all()
         for pk in scope_pks:
-            tokens = tokens.filter(scopes__pk=pk).order_by('character_name')
+            tokens = tokens.filter(scopes__pk=pk)
         return tokens
 
     def require_scopes_exact(self, scope_string):

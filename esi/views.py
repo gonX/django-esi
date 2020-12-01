@@ -115,12 +115,12 @@ def select_token(request, scopes='', new=False):
         # fake distint on character_name to not show duplicates
         # MySQL doesn't support distint on field.
         token_output = []
-        _characters = []
+        _characters = set()
         for t in tokens:
             if t.character_name in _characters:
                 continue
             token_output.append(t)
-            _characters.append(t.character_name)
+            _characters.add(t.character_name)
 
         context = {
             'tokens': token_output,
