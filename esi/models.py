@@ -42,14 +42,17 @@ class Scope(models.Model):
 
     @property
     def friendly_name(self):
+        return self._friendly_name(self.name)
+
+    @classmethod
+    def _friendly_name(cls, name):
         try:
-            return re.sub('_', ' ', self.name.split('.')[1]).strip()
+            return re.sub('_', ' ', name.split('.')[1]).strip()
         except IndexError:
-            return self.name
+            return name
 
     def __str__(self):
         return self.name
-
 
 class Token(models.Model):
     """
