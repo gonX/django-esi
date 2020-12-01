@@ -31,7 +31,7 @@ class TestScope(TestCase):
             "dummy_scope",
             str(x)
         )
-    
+
     def test_friendly_name_fail(self):
         x = Scope(name='dummy_scope')
         self.assertEqual(

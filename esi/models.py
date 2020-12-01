@@ -54,6 +54,7 @@ class Scope(models.Model):
     def __str__(self):
         return self.name
 
+
 class Token(models.Model):
     """
     EVE Swagger Interface Access Token

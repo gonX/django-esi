@@ -18,7 +18,7 @@
             .character-image{
                 width: 110px;
                 height: auto;
-            }             
+            }
 
             @media (min-width: 550px) {
                 .character-image {
@@ -33,7 +33,6 @@
                 .sso-card{
                     width: auto;
                 }
-
             }
         </style>
     </head>
@@ -90,7 +89,7 @@
                             </div>
                         </form>
                     {% endfor %}
-                    <form method="post"> 
+                    <form method="post">
                         {% csrf_token %}
                         <div class="card text-white bg-secondary m-2 sso-card">
                             <div class="card-header text-center">New Character</div>
@@ -107,7 +106,7 @@
                             </div>
                         </div>
                     </form>
-                </div>  
+                </div>
             </div>
         </div>
     </body>

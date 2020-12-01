@@ -111,7 +111,7 @@ def select_token(request, scopes='', new=False):
             scopes_output = [scopes]
         else:
             scopes_output = scopes
-        
+
         # fake distint on character_name to not show duplicates
         # MySQL doesn't support distint on field.
         token_output = []
@@ -126,7 +126,7 @@ def select_token(request, scopes='', new=False):
             'tokens': token_output,
             'scopes': scopes_output
         }
-        
+
         return render(r, 'esi/select_token.html', context=context)
 
     return _token_list(request)
