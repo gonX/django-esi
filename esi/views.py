@@ -106,9 +106,27 @@ def select_token(request, scopes='', new=False):
 
     @tokens_required(scopes=scopes, new=new)
     def _token_list(r, tokens):
+        # Single Scope as string will break the Parser in the template
+        if isinstance(scopes, str):
+            scopes_output = [scopes]
+        else:
+            scopes_output = scopes
+
+        # fake distint on character_name to not show duplicates
+        # MySQL doesn't support distint on field.
+        token_output = []
+        _characters = set()
+        for t in tokens:
+            if t.character_name in _characters:
+                continue
+            token_output.append(t)
+            _characters.add(t.character_name)
+
         context = {
-            'tokens': tokens,
+            'tokens': token_output,
+            'scopes': scopes_output
         }
+
         return render(r, 'esi/select_token.html', context=context)
 
     return _token_list(request)

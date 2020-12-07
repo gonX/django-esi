@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+## [2.0.5] - 2020-11-11
+
+### Changed
+
+- Display improvements to the token selection screen https://gitlab.com/allianceauth/django-esi/-/merge_requests/38
+
 ## [2.0.4] - 2020-11-11
 
 ### Added
