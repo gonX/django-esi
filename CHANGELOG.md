@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased] - yyyy-mm-dd
 
+### Changed
+
+- Reduce load time, add filters and default ordering for token admin page
+
 ## [2.0.5] - 2020-11-11
 
 ### Changed
