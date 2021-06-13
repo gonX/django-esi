@@ -5,7 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-[Unreleased] - yyyy-mm-dd
+## [Unreleased] - yyyy-mm-dd
+
+### Important update notes
+
+If you have recently installed django-esi with Django 3.2 and are using `BigAutoField` as default for automatically created primary keys, then Django might already have automatically created an additional migration for auto fields.
+
+To prevent this update from creating another migration we recommend to migrate django-esi back to the previous migration and remove the auto field migration **before(!!!)** updating to this version.
+
+You can use this command to check if you have an auto field migration:
+
+```bash
+python manage.py showmigrations esi
+```
+
+The last official migration is `0008_nullable_refresh_token`. The auto field migration would be 0009. If you do not have a 0009 migration no further action is required.
+
+You can then migrate back to 0008 with this command:
+
+```bash
+python manage.py migrate esi 0008
+```
+
+Finally, delete the automatically generated 0009 migration for django-esi from your system.
+
+See the [official documentation](https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys) for more information about the new default for automatically creates primary keys.
+
+### Added
+
+- Add support for Django 3.2
+- Add support for Python 3.9
+
+### Changed
+
+- Remove support for Django 3.0 (EOL on 01 Apr 2021)
 
 ## [2.0.5] - 2020-11-11
 
