@@ -13,6 +13,10 @@ class ScopeAdmin(admin.ModelAdmin):
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('user').prefetch_related('scopes')
+
     def get_scopes(self, obj):
         return ", ".join([x.name for x in obj.scopes.all()])
 
@@ -21,3 +25,8 @@ class TokenAdmin(admin.ModelAdmin):
     User = get_user_model()
     list_display = ('user', 'character_name', 'get_scopes')
     search_fields = ['user__%s' % User.USERNAME_FIELD, 'character_name', 'scopes__name']
+    list_filter = (
+        ('user', admin.RelatedOnlyFieldListFilter),
+        'character_name'
+    )
+    ordering = ('user',)

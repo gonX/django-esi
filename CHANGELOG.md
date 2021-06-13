@@ -40,6 +40,10 @@ See the [official documentation](https://docs.djangoproject.com/en/3.2/releases/
 
 - Remove support for Django 3.0 (EOL on 01 Apr 2021)
 
+### Changed
+
+- Reduce load time, add filters and default ordering for token admin page
+
 ## [2.0.5] - 2020-11-11
 
 ### Changed
