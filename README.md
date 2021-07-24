@@ -8,6 +8,7 @@ Django app for easy access to the EVE Swagger Interface (ESI)
 [![license](https://img.shields.io/badge/license-GPLv3-green)](https://pypi.org/project/django-esi/)
 [![pipeline-status](https://gitlab.com/allianceauth/django-esi/badges/master/pipeline.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
 [![coverage](https://gitlab.com/allianceauth/django-esi/badges/master/coverage.svg)](https://gitlab.com/allianceauth/django-esi/pipelines)
+[![Documentation Status](https://readthedocs.org/projects/django-esi/badge/?version=latest)](https://django-esi.readthedocs.io/en/latest/?badge=latest)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Chat on Discord](https://img.shields.io/discord/399006117012832262.svg)](https://discord.gg/fjnHAmk)
 
@@ -42,4 +43,4 @@ This app is a fork from [adarnauth-esi](https://gitlab.com/Adarnof/adarnauth-esi
 
 ## Documentation
 
-For all details on how to install and use Eve Auth please see the documentation.
+For all details on how to install and use Eve Auth please see the [documentation](https://django-esi.readthedocs.io/en/latest/).
