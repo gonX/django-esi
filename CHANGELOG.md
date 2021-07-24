@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.1.0] - 2021-07-24
+
 ### Important update notes
 
 If you have recently installed django-esi with Django 3.2 and are using `BigAutoField` as default for automatically created primary keys, then Django might already have automatically created an additional migration for auto fields.
@@ -35,6 +37,7 @@ See the [official documentation](https://docs.djangoproject.com/en/3.2/releases/
 
 - Add support for Django 3.2
 - Add support for Python 3.9
+- Add documentation on read-the-docs incl. API docs
 
 ### Changed
 
