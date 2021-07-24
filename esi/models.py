@@ -2,6 +2,7 @@ import datetime
 import re
 import logging
 
+from bravado.client import SwaggerClient
 from requests.auth import HTTPBasicAuth
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2.rfc6749.errors import (
@@ -56,8 +57,8 @@ class Scope(models.Model):
 
 
 class Token(models.Model):
-    """
-    EVE Swagger Interface Access Token
+    """EVE Swagger Interface Access Token
+
     Contains information about the authenticating character
     and scopes granted to this token.
     Contains the access token required for ESI authentication as well as refreshing.
@@ -120,16 +121,16 @@ class Token(models.Model):
         )
 
     @property
-    def can_refresh(self):
-        """
-        Determines if this token can be refreshed upon expiry
-        """
+    def can_refresh(self) -> bool:
+        """Determine if this token can be refreshed upon expiry."""
         return bool(self.refresh_token)
 
     @property
-    def expires(self):
-        """
-        Determines when the token expires.
+    def expires(self) -> datetime.datetime:
+        """Determines when this token expires.
+
+        Returns:
+            Date & time when this token expires
         """
         return (
             self.created
@@ -137,16 +138,29 @@ class Token(models.Model):
         )
 
     @property
-    def expired(self):
-        """
-        Determines if the access token has expired.
-        """
+    def expired(self) -> bool:
+        """Determines if this token has expired."""
         return self.expires < timezone.now()
 
-    def valid_access_token(self):
-        """
-        Refresh token and return `access_token` for an authed ESI call
-        :return: access_token
+    def valid_access_token(self) -> str:
+        """Refresh and return access token to be used in an authed ESI call.
+
+        Example:
+            .. code-block:: python
+
+                # fetch medals for a character
+                medals = esi.client.Character.get_characters_character_id_medals(
+                    # required parameter for endpoint
+                    character_id = token.character_id,
+                    # provide a valid access token, which will be refreshed if required
+                    token = token.valid_access_token()
+                ).results()
+
+        Returns:
+           Valid access token
+
+        Raises:
+            TokenExpiredError: When token can not be refreshed
         """
         if self.expired:
             if self.can_refresh:
@@ -155,12 +169,14 @@ class Token(models.Model):
                 raise TokenExpiredError()
         return self.access_token
 
-    def refresh(self, session=None, auth=None):
-        """
-        Refreshes the token.
-        :param session: :class:`requests_oauthlib.OAuth2Session` for refreshing
-        token with.
-        :param auth: :class:`requests.auth.HTTPBasicAuth`
+    def refresh(
+        self, session: OAuth2Session = None, auth: HTTPBasicAuth = None
+    ) -> None:
+        """Refresh this token.
+
+        Args:
+            session: session for refreshing token with
+            auth: ESI authentication
         """
         logger.debug("Attempting refresh of %r", self)
         if self.can_refresh:
@@ -199,11 +215,15 @@ class Token(models.Model):
             logger.debug("Not a refreshable token.")
             raise NotRefreshableTokenError()
 
-    def get_esi_client(self, **kwargs):
-        """
-        Creates an authenticated ESI client with this token.
-        :param kwargs: Extra spec versioning as per `esi.clients.esi_client_factory`
-        :return: :class:`bravado.client.SwaggerClient`
+    def get_esi_client(self, **kwargs) -> SwaggerClient:
+        """Creates an authenticated ESI client with this token.
+
+        Args:
+            **kwargs: Extra spec versioning as per \
+                :class:`esi.clients.esi_client_factory`
+
+        Returns:
+            New ESI client
         """
         return esi_client_factory(token=self, **kwargs)
 
@@ -232,12 +252,15 @@ class Token(models.Model):
             self.save()
 
     @classmethod
-    def get_token(cls, character_id, scopes):
-        """
-        Helper method to get a token for a specific character with specific scopes
-        :param character_id: Character to filter on.
-        :param scopes: array of ESI scope strings to search for.
-        :return: :class:'esi.models.Token or False
+    def get_token(cls, character_id: int, scopes: list) -> "Token":
+        """Helper method to get a token for a specific character with specific scopes.
+
+        Args:
+            character_id: Character to filter on.
+            scopes: array of ESI scope strings to search for.
+
+        Returns:
+            Matching token or `False` when token is not found
         """
         token = (
             Token.objects

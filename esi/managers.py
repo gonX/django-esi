@@ -1,5 +1,6 @@
 from datetime import timedelta
 import logging
+from typing import Union
 
 import requests
 from requests_oauthlib import OAuth2Session
@@ -28,22 +29,24 @@ def _process_scopes(scopes):
 
 
 class TokenQueryset(models.QuerySet):
-    def get_expired(self):
-        """
-        Get all tokens which have expired.
-        :return: All expired tokens.
-        :rtype: :class:`esi.managers.TokenQueryset`
+    def get_expired(self) -> models.QuerySet:
+        """Get all tokens which have expired.
+
+        Returns:
+            All expired tokens.
         """
         max_age = \
             timezone.now() - timedelta(seconds=app_settings.ESI_TOKEN_VALID_DURATION)
         return self.filter(created__lte=max_age)
 
-    def bulk_refresh(self):
-        """
-        Refreshes all refreshable tokens in the queryset.
-        Deletes any tokens which fail to refresh.
-        Deletes any tokens which are expired and cannot refresh.
+    def bulk_refresh(self) -> models.QuerySet:
+        """Refresh all refreshable tokens in the queryset and delete any expired token
+        that fails to refresh or can not be refreshed.
+
         Excludes tokens for which the refresh was incomplete for other reasons.
+
+        Returns:
+            All refreshed tokens
         """
         session = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID)
         auth = requests.auth.HTTPBasicAuth(
@@ -62,24 +65,27 @@ class TokenQueryset(models.QuerySet):
         self.filter(refresh_token__isnull=True).get_expired().delete()
         return self.exclude(pk__in=incomplete)
 
-    def require_valid(self):
-        """
-        Ensures all tokens are still valid. If expired, attempts to refresh.
+    def require_valid(self) -> models.QuerySet:
+        """Ensure all tokens are still valid and attempt to refresh any which are expired
+
         Deletes those which fail to refresh or cannot be refreshed.
-        :return: All tokens which are still valid.
-        :rtype: :class:`esi.managers.TokenQueryset`
+
+        Returns:
+            All tokens which are still valid.
         """
         expired = self.get_expired()
         valid = self.exclude(pk__in=expired)
         valid_expired = expired.bulk_refresh()
         return valid_expired | valid
 
-    def require_scopes(self, scope_string):
-        """
-        :param scope_string: The required scopes.
-        :type scope_string: Union[str, list]
-        :return: The tokens with all requested scopes.
-        :rtype: :class:`esi.managers.TokenQueryset`
+    def require_scopes(self, scope_string: Union[str, list]) -> models.QuerySet:
+        """Filter tokens which have at least a subset of given scopes.
+
+        Args:
+            scope_string: The required scopes.
+
+        Returns:
+            Tokens which have all requested scopes.
         """
         scopes = _process_scopes(scope_string)
         if not scopes:
@@ -95,12 +101,14 @@ class TokenQueryset(models.QuerySet):
             tokens = tokens.filter(scopes__pk=pk)
         return tokens
 
-    def require_scopes_exact(self, scope_string):
-        """
-        :param scope_string: The required scopes.
-        :type scope_string: Union[str, list]
-        :return: The tokens with only the requested scopes.
-        :rtype: :class:`esi.managers.TokenQueryset`
+    def require_scopes_exact(self, scope_string: Union[str, list]) -> models.QuerySet:
+        """Filter tokens which exactly have the given scopes.
+
+        Args:
+            scope_string: The required scopes.
+
+        Returns:
+            Tokens which have all requested scopes.
         """
         num_scopes = len(_process_scopes(scope_string))
         scopes_qs = self\
@@ -111,11 +119,11 @@ class TokenQueryset(models.QuerySet):
         pks = [v['pk'] for v in scopes_qs]
         return self.filter(pk__in=pks)
 
-    def equivalent_to(self, token):
-        """
-        Gets all tokens which match the character and scopes of a reference token
-        :param token: :class:`esi.models.Token`
-        :return: :class:`esi.managers.TokenQueryset`
+    def equivalent_to(self, token) -> models.QuerySet:
+        """Fetch all tokens which match the character and scopes of given reference token
+
+        Args:
+            token: :class:`esi.models.Token` reference token
         """
         return self\
             .filter(character_id=token.character_id)\
