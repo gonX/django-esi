@@ -30,4 +30,4 @@ This app is a fork from [adarnauth-esi](https://gitlab.com/Adarnof/adarnauth-esi
 
 ## Documentation
 
-For all details on how to install and use Eve Auth please see the [documentation](https://django-esi.readthedocs.io/en/latest/).
+For all details on how to install and use django-esi please see the [documentation](https://django-esi.readthedocs.io/en/latest/).
