@@ -12,19 +12,6 @@ Django app for easy access to the EVE Swagger Interface (ESI)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Chat on Discord](https://img.shields.io/discord/399006117012832262.svg)](https://discord.gg/fjnHAmk)
 
-## Contents
-
-- [Overview](#overview)
-- [Installation](#installation)
-- [Usage in views](#usage-in-views)
-- [Accessing ESI](#accessing-esi)
-- [User Agent header](#user-agent-header)
-- [Cleaning the database](#cleaning-the-database)
-- [Advanced features](#advanced-features)
-- [Settings](#settings)
-- [History of this app](#history-of-this-app)
-- [Change log](CHANGELOG.md)
-
 ## Overview
 
 Django-esi is a Django app that provides an interface for easy access to the EVE Swagger Interface (ESI), the official API for the game [EVE Online](https://www.eveonline.com/).
