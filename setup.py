@@ -16,6 +16,7 @@ setup(
         'requests>=2.9.1,<3.0',
         'requests_oauthlib>=0.8.0,<2.0',
         'django>=2.2,<4',
+        'jsonschema<4.0.0',
         'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
     ],
