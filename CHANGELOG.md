@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.1.1] - 2021-09-30
+
+### Changed
+
+- Capped version of `jsonschema` below 4.0.0 due to incompatibilities. [49](https://gitlab.com/allianceauth/django-esi/-/merge_requests/49)
+
 ## [2.1.0] - 2021-07-24
 
 ### Important update notes
