@@ -197,6 +197,12 @@ class Token(models.Model):
                     auth=auth
                 )
                 logger.debug("Retrieved new token from SSO servers.")
+                token_data = TokenManager.validate_access_token(token['access_token'])
+
+                # TODO verify token properly
+                if self.character_owner_hash != token_data['owner']:
+                    logger.warning("Invalid Owner")
+
                 self.access_token = token['access_token']
                 self.refresh_token = token['refresh_token']
                 self.created = timezone.now()
@@ -235,6 +241,7 @@ class Token(models.Model):
     def get_token_data(cls, access_token):
         TokenManager.validate_access_token(access_token)
 
+    # unused?
     def update_token_data(self, commit=True):
         logger.debug("Updating token data for %r", self)
         if self.expired:
@@ -244,10 +251,10 @@ class Token(models.Model):
                 raise TokenExpiredError()
         token_data = self.get_token_data(self.access_token)
         logger.debug(token_data)
-        self.character_id = token_data['CharacterID']
-        self.character_name = token_data['CharacterName']
-        self.character_owner_hash = token_data['CharacterOwnerHash']
-        self.token_type = token_data['TokenType']
+        self.character_id = token_data['character_id']
+        self.character_name = token_data['name']
+        self.character_owner_hash = token_data['owner']
+        self.token_type = token_data['token_type']
         logger.debug("Successfully updated token data.")
         if commit:
             self.save()
