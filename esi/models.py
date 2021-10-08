@@ -104,6 +104,10 @@ class Token(models.Model):
     scopes = models.ManyToManyField(
         Scope, blank=True, help_text="The access scopes granted by this token."
     )
+    sso_version = models.IntegerField(
+        help_text="EVE SSO Version.",
+        default=2
+    )
 
     objects = TokenManager()
 
@@ -229,10 +233,7 @@ class Token(models.Model):
 
     @classmethod
     def get_token_data(cls, access_token):
-        session = OAuth2Session(
-            app_settings.ESI_SSO_CLIENT_ID, token={'access_token': access_token}
-        )
-        return session.request('get', app_settings.ESI_TOKEN_VERIFY_URL).json()
+        TokenManager.validate_access_token(access_token)
 
     def update_token_data(self, commit=True):
         logger.debug("Updating token data for %r", self)

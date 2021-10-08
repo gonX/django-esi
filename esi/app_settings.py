@@ -73,7 +73,7 @@ Can temporarily overwritten with by passing ``timeout`` with ``result()``
 # These probably won't ever change. Override if needed.
 ESI_API_URL = getattr(settings, 'ESI_API_URL', 'https://esi.evetech.net/')
 ESI_OAUTH_URL = getattr(
-    settings, 'ESI_SSO_BASE_URL', 'https://login.eveonline.com/oauth'
+    settings, 'ESI_SSO_BASE_URL', 'https://login.eveonline.com/v2/oauth'
 )
 ESI_OAUTH_LOGIN_URL = getattr(
     settings, 'ESI_SSO_LOGIN_URL', ESI_OAUTH_URL + "/authorize/"
