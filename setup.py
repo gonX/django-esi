@@ -19,6 +19,7 @@ setup(
         'jsonschema<4.0.0',
         'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
+        'python-jose>=3.3.0,<4.0.0'
     ],
     packages=find_packages(),
     include_package_data=True,
