@@ -200,8 +200,10 @@ class Token(models.Model):
                 token_data = TokenManager.validate_access_token(token['access_token'])
 
                 # TODO verify token properly
-                if self.character_owner_hash != token_data['owner']:
-                    logger.warning("Invalid Owner")
+                if token_data is not None:
+                    if self.character_owner_hash != token_data['owner']:
+                        logger.warning("Invalid Owner")
+                        raise InvalidTokenError("Ownership Changed! Revoke me!")
 
                 self.access_token = token['access_token']
                 self.refresh_token = token['refresh_token']
