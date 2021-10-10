@@ -79,9 +79,12 @@ ESI_OAUTH_LOGIN_URL = getattr(
     settings, 'ESI_SSO_LOGIN_URL', ESI_OAUTH_URL + "/authorize/"
 )
 ESI_TOKEN_URL = getattr(settings, 'ESI_CODE_EXCHANGE_URL', ESI_OAUTH_URL + "/token")
+
 ESI_TOKEN_VERIFY_URL = getattr(
     settings, 'ESI_TOKEN_EXCHANGE_URL', ESI_OAUTH_URL + "/verify"
-)
+)  # Depreciated
+ESI_TOKEN_JWK_SET_URL = "https://login.eveonline.com/oauth/jwks"
+
 ESI_TOKEN_VALID_DURATION = int(getattr(settings, 'ESI_TOKEN_VALID_DURATION', 1170))
 ESI_SPEC_CACHE_DURATION = int(getattr(settings, 'ESI_SPEC_CACHE_DURATION', 3600))
 

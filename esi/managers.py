@@ -142,17 +142,32 @@ class TokenManager(models.Manager):
         """
         return TokenQueryset(self.model, using=self._db)
 
-    @classmethod
-    def validate_access_token(self, token: str):
+    @staticmethod
+    def _decode_jwt(jwt_token: dict, jwk_set: dict, issuer: str):
+        """
+        Helper function to decide the JWT access token supplied by EVE SSO
+        """
+        token_data = jwt.decode(
+            jwt_token,
+            jwk_set,
+            algorithms=jwk_set["alg"],
+            issuer=issuer
+        )
+        token_detail = token_data.get("sub", None).split(":")
+        token_data['character_id'] = int(token_detail[2])
+        token_data['token_type'] = token_detail[0].lower()
+        return token_data
+
+    @staticmethod
+    def validate_access_token(token: str):
         """
         Validate a JWT token retrieved from the EVE SSO.
         :param token: A JWT token originating from the EVE SSO v2
         :return: :class:`dict` The contents of the validated JWT token if
             there are no validation errors
         """
-        jwk_set_url = "https://login.eveonline.com/oauth/jwks"
 
-        res = requests.get(jwk_set_url)
+        res = requests.get(app_settings.ESI_TOKEN_JWK_SET_URL)
         res.raise_for_status()
 
         data = res.json()
@@ -169,33 +184,30 @@ class TokenManager(models.Manager):
         jwk_set = next((item for item in jwk_sets if item["alg"] == "RS256"))
 
         try:
-            token_data = jwt.decode(
+            return TokenManager._decode_jwt(
                 token,
                 jwk_set,
-                algorithms=jwk_set["alg"],
-                issuer="login.eveonline.com"
+                "login.eveonline.com"
             )
-            token_detail = token_data.get("sub", None).split(":")
-            token_data['character_id'] = int(token_detail[2])
-            token_data['token_type'] = token_detail[0].lower()
-            return token_data
-
+        # TODO Raise the errors to be handled in the lib
         except ExpiredSignatureError:
             logger.warning("The JWT token has expired: {}")
             return None
         except JWTError as e:
-            logger.warning("The JWT signature was invalid: {}").format(str(e))
+            logger.warning("The JWT signature was invalid: {}".format(str(e)))
             return None
         except JWTClaimsError:
             try:
-                return jwt.decode(token,
-                                  jwk_set,
-                                  algorithms=jwk_set["alg"],
-                                  issuer="https://login.eveonline.com"
-                                  )
+                return TokenManager._decode_jwt(
+                    token,
+                    jwk_set,
+                    "https://login.eveonline.com"
+                )
             except JWTClaimsError as e:
-                print("The issuer claim was not from login.eveonline.com or "
-                      "https://login.eveonline.com: {}".format(str(e)))
+                logger.warning("The issuer claim was not from "
+                               "login.eveonline.com or "
+                               "https://login.eveonline.com: "
+                               "{}".format(str(e)))
                 return None
 
     def create_from_code(self, code, user=None):
