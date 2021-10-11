@@ -61,7 +61,7 @@ class Command(BaseCommand):
                 except (TokenInvalidError, IncompleteResponseError):
                     try:
                         token = session.refresh_token(
-                            "https://login.eveonline.com/v2/oauth/token",
+                            "https://login.eveonline.com/oauth/token",
                             refresh_token=token.refresh_token,
                             auth=auth
                         )
