@@ -147,6 +147,7 @@ class TokenManager(models.Manager):
         """
         Helper function to decide the JWT access token supplied by EVE SSO
         """
+        logger.debug("Start Decode")
         token_data = jwt.decode(
             jwt_token,
             jwk_set,
@@ -156,6 +157,7 @@ class TokenManager(models.Manager):
         token_detail = token_data.get("sub", None).split(":")
         token_data['character_id'] = int(token_detail[2])
         token_data['token_type'] = token_detail[0].lower()
+        logger.debug(token_data)
         return token_data
 
     @staticmethod
