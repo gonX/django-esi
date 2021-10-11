@@ -108,6 +108,8 @@ class Command(BaseCommand):
                     result = _sso_v1_refresh(session, auth, token, "Initial")
                     if result is not True:
                         failures.append(result)
+                        if purge:
+                            token.delete()
                         t.update(1)
                         continue
                 try:
