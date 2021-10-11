@@ -210,8 +210,11 @@ class Token(models.Model):
                 self.created = timezone.now()
                 self.save()
                 logger.debug("Successfully refreshed %r", self)
-            except (InvalidGrantError, InvalidTokenError, InvalidClientIdError) as e:
-                logger.info("Refresh failed for %r: %r", self, e)
+            except (InvalidGrantError) as e:  # this token is gone forever
+                logger.error("Refresh impossible for %r: %r", self, e)
+                raise TokenInvalidError()
+            except (InvalidTokenError, InvalidClientIdError) as e:  # these may be recoverable?
+                logger.warning("Refresh failed for %r: %r", self, e)
                 raise TokenInvalidError()
             except MissingTokenError as e:
                 logger.info("Refresh failed for %r: %r", self, e)
