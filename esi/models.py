@@ -197,6 +197,7 @@ class Token(models.Model):
                     auth=auth
                 )
                 logger.debug("Retrieved new token from SSO servers.")
+                logger.debug(token)
                 token_data = TokenManager.validate_access_token(token['access_token'])
 
                 # TODO verify token properly
@@ -207,6 +208,7 @@ class Token(models.Model):
 
                 self.access_token = token['access_token']
                 self.refresh_token = token['refresh_token']
+                self.sso_version = 2  # we will never be ssov1 again
                 self.created = timezone.now()
                 self.save()
                 logger.debug("Successfully refreshed %r", self)
