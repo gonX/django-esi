@@ -1,11 +1,15 @@
+from datetime import datetime
 from django.core.management.base import BaseCommand, CommandError
 
 from django.db.migrations.recorder import MigrationRecorder
 from django.utils import timezone
 
 from esi.models import Token
-from esi.errors import TokenInvalidError, IncompleteResponseError, \
+from esi.errors import (
+    TokenInvalidError,
+    IncompleteResponseError,
     NotRefreshableTokenError
+)
 from esi import app_settings
 from oauthlib.oauth2.rfc6749.errors import (
     InvalidClientIdError,
@@ -18,13 +22,56 @@ from tqdm import tqdm
 
 from requests_oauthlib import OAuth2Session
 
+import pytz
+
+EVE_SSOV1_END_DATE = datetime(
+    year=2021, month=11, day=1, hour=0, minute=0, tzinfo=pytz.UTC)
+
+
+def _sso_v1_refresh(session: OAuth2Session, auth: HTTPBasicAuth, token: Token, message: str):
+    """
+    SSOv1 Refresh.
+    """
+    try:
+        _data = session.refresh_token(
+            "https://login.eveonline.com/oauth/token",
+            refresh_token=token.refresh_token,
+            auth=auth
+        )
+
+        token.access_token = _data['access_token']
+        token.refresh_token = _data['refresh_token']
+        token.sso_version = 1
+        token.created = timezone.now()
+        token.save()
+        return True
+    except (InvalidGrantError):
+        return ("ID:%s '%s' %s refresh failed"
+                " (InvalidGrant)" % (token.id, token.character_name, message))
+    except (InvalidTokenError, InvalidClientIdError):
+        return ("ID:%s '%s' %s SSOv1 Refresh Failed "
+                "(InvalidToken, InvalidClientId)" % (token.id, token.character_name, message))
+    except Exception as e:
+        return ("ID:%s '%s' %s SSOv1 "
+                "Refresh Failed (%s)" % (token.id, token.character_name, message, e))
+
 
 class Command(BaseCommand):
     help = 'Attempt to Migrate all SSOv1 Tokens to SSOv2, and report failures.'
     requires_migrations_checks = True
     requires_system_checks = True
 
+    def add_arguments(self, parser):
+        parser.add_argument('--no-sso-v1', action='store_true',
+                            help="Do not test on SSOv1 Endpoints, both before"
+                            " updating to SSOv2 and after a failure.")
+        parser.add_argument('--purge', action='store_true',
+                            help='Purge Tokens that fail the SSOv2 Update')
+
     def handle(self, *args, **options):
+        use_v1 = options.get('no-sso-v1', True) and (timezone.now() <= EVE_SSOV1_END_DATE)
+        purge = options.get('purge', False)
+
         migration_10 = MigrationRecorder.Migration.objects.filter(
             app='esi', name="0010_set_new_tokens_to_sso_v2").exists()
 
@@ -32,6 +79,9 @@ class Command(BaseCommand):
             raise CommandError("Run migrations first and try again!")
         else:
             self.stdout.write("\n\nMigrations up to date. Proceeding to updates!")
+
+        if not use_v1:
+            self.stdout.write("\n\nNot using SSOv1 pre/post error Verification!")
 
         # lets reuse our own session and auth
         session = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID)
@@ -51,49 +101,34 @@ class Command(BaseCommand):
             return self.stdout.write("There are no Tokens to update.")
 
         failures = []
-        non_refreshables = 0
         # Nice Progress bar as this may take a while.
         with tqdm(total=total) as t:
             for token in tokens:
+                if use_v1:
+                    result = _sso_v1_refresh(session, auth, token, "Initial")
+                    if result is not True:
+                        failures.append(result)
+                        t.update(1)
+                        continue
                 try:
                     token.refresh(session=session, auth=auth)
-
                 except (TokenInvalidError, IncompleteResponseError):
-                    try:
-                        token = session.refresh_token(
-                            "https://login.eveonline.com/oauth/token",
-                            refresh_token=token.refresh_token,
-                            auth=auth
-                        )
-
-                        token.access_token = token['access_token']
-                        token.refresh_token = token['refresh_token']
-                        token.sso_version = 1
-                        token.created = timezone.now()
-                        token.save()
-                        failures.append("ID:%s for %s SSOv1 Refresh Successful" % (token.id, token.character_name))
-
-                    except (InvalidGrantError):
-                        # self.stdout.write("InvalidGrantError Fail SSOv1")
-                        failures.append("ID:Deleted for %s" % (token.character_name))
-                        token.delete()
-                        non_refreshables += 1
-                    except (InvalidTokenError, InvalidClientIdError):
-                        # self.stdout.write("InvalidTokenError, InvalidClientIdError Fail SSOv1")
-                        failures.append(
-                            "ID:%s for %s SSOv1 Refresh Failed "
-                            "(InvalidTokenError, InvalidClientIdError)" % (token.id, token.character_name))
-                    except Exception as e:
-                        # self.stdout.write("Exception Fail SSOv1 %s" % e)
-                        failures.append(
-                            "ID:%s for %s SSOv1 Refresh Failed (%s)" % (token.id, token.character_name, e))
-
+                    if use_v1:
+                        result = _sso_v1_refresh(session, auth, token, "Post v2 Failure")
+                        if result is not True:
+                            failures.append(result)
+                            if purge:
+                                token.delete()
+                    else:
+                        if purge:
+                            token.delete()
                 except NotRefreshableTokenError:
-                    non_refreshables += 1  # wat do FC...
+                    if purge:
+                        token.delete()
                 t.update(1)
 
         self.stdout.write("Completed Updates!")
-        self.stdout.write("%s Failures and %s non-refreshable tokens!" % (
-            len(failures), non_refreshables
+        self.stdout.write("%s Failures!" % (
+            len(failures)
         ))
         self.stdout.write("\n".join(failures))
