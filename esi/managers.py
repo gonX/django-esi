@@ -233,7 +233,7 @@ class TokenManager(models.Manager):
         )
 
         token_data = TokenManager.validate_access_token(token.get('access_token', None))
-        logger.debug(token_data)
+        # logger.debug(token_data)
 
         # translate returned data to a model
         model = self.create(
