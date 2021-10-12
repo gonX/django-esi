@@ -68,7 +68,8 @@ class Command(BaseCommand):
                             help='Purge Tokens that fail the SSOv2 Update')
 
     def handle(self, *args, **options):
-        use_v1 = not options.get('skip_v1_checks', True) and (timezone.now() <= EVE_SSOV1_END_DATE)
+        print(options)
+        use_v1 = not options.get('skip_v1_checks', False) and (timezone.now() <= EVE_SSOV1_END_DATE)
         purge = options.get('purge', False)
 
         migration_10 = MigrationRecorder.Migration.objects.filter(
