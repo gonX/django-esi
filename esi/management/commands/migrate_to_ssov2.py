@@ -24,8 +24,8 @@ from requests_oauthlib import OAuth2Session
 
 import pytz
 
-EVE_SSOV1_END_DATE = datetime(
-    year=2021, month=11, day=1, hour=0, minute=0, tzinfo=pytz.UTC)
+EVE_SSOV1_END_DATE = pytz.UTC.localize(datetime(
+    year=2021, month=11, day=1, hour=0, minute=0))
 
 
 def _sso_v1_refresh(session: OAuth2Session, auth: HTTPBasicAuth, token: Token, message: str):
@@ -38,7 +38,6 @@ def _sso_v1_refresh(session: OAuth2Session, auth: HTTPBasicAuth, token: Token, m
             refresh_token=token.refresh_token,
             auth=auth
         )
-
         token.access_token = _data['access_token']
         token.refresh_token = _data['refresh_token']
         token.sso_version = 1
@@ -69,7 +68,7 @@ class Command(BaseCommand):
                             help='Purge Tokens that fail the SSOv2 Update')
 
     def handle(self, *args, **options):
-        use_v1 = options.get('skip-v1-checks', True) and (timezone.now() <= EVE_SSOV1_END_DATE)
+        use_v1 = not options.get('skip_v1_checks', True) and (timezone.now() <= EVE_SSOV1_END_DATE)
         purge = options.get('purge', False)
 
         migration_10 = MigrationRecorder.Migration.objects.filter(

@@ -17,6 +17,7 @@ def _generate_token(
     scopes: list = None,
     timestamp_dt: object = None,
     expires_in: int = 1200,
+    sso_version: int = 2
 ) -> dict:
     from datetime import datetime, timedelta
 
@@ -39,7 +40,8 @@ def _generate_token(
         'scp': ' '.join(list(scopes)),
         'token_type': 'character',
         'owner': character_owner_hash,
-        'IntellectualProperty': 'EVE'
+        'IntellectualProperty': 'EVE',
+        'sso_version': sso_version
     }
     return token
 
@@ -59,6 +61,7 @@ def _store_as_Token(token: dict, user: object) -> object:
         character_name=token['name'],
         token_type=token['token_type'],
         character_owner_hash=token['owner'],
+        sso_version=token['sso_version']
     )
     for scope_name in token['scp'].split(' '):
         scope, _ = Scope.objects.get_or_create(
