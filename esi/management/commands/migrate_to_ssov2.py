@@ -62,14 +62,14 @@ class Command(BaseCommand):
     requires_system_checks = True
 
     def add_arguments(self, parser):
-        parser.add_argument('--no-sso-v1', action='store_true',
+        parser.add_argument('--skip-v1-checks', action='store_true',
                             help="Do not test on SSOv1 Endpoints, both before"
                             " updating to SSOv2 and after a failure.")
         parser.add_argument('--purge', action='store_true',
                             help='Purge Tokens that fail the SSOv2 Update')
 
     def handle(self, *args, **options):
-        use_v1 = options.get('no-sso-v1', True) and (timezone.now() <= EVE_SSOV1_END_DATE)
+        use_v1 = options.get('skip-v1-checks', True) and (timezone.now() <= EVE_SSOV1_END_DATE)
         purge = options.get('purge', False)
 
         migration_10 = MigrationRecorder.Migration.objects.filter(
@@ -81,7 +81,7 @@ class Command(BaseCommand):
             self.stdout.write("\n\nMigrations up to date. Proceeding to updates!")
 
         if not use_v1:
-            self.stdout.write("\n\nNot using SSOv1 pre/post error Verification!")
+            self.stdout.write("\n\nSkipping SSOv1 pre/post error Verification!")
 
         # lets reuse our own session and auth
         session = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID)
