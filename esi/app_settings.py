@@ -82,7 +82,7 @@ ESI_TOKEN_URL = getattr(settings, 'ESI_CODE_EXCHANGE_URL', ESI_OAUTH_URL + "/tok
 
 ESI_TOKEN_VERIFY_URL = getattr(
     settings, 'ESI_TOKEN_EXCHANGE_URL', ESI_OAUTH_URL + "/verify"
-)  # Depreciated
+)  # deprecated
 ESI_TOKEN_JWK_SET_URL = "https://login.eveonline.com/oauth/jwks"
 
 ESI_TOKEN_VALID_DURATION = int(getattr(settings, 'ESI_TOKEN_VALID_DURATION', 1170))
