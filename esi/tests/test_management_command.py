@@ -45,6 +45,33 @@ class TestSSSOMigrations(TestCase):
             ),
             self.user
         )
+        self.token_v1 = _store_as_Token(
+            _generate_token(
+                character_id=character_id,
+                character_name=character_name,
+                scopes=['esi-universe.read_structures.v1'],
+                sso_version=1
+            ),
+            self.user
+        )
+        self.token_v1 = _store_as_Token(
+            _generate_token(
+                character_id=character_id,
+                character_name=character_name,
+                scopes=['esi-universe.read_structures.v1'],
+                sso_version=1
+            ),
+            self.user
+        )
+        self.token_v1 = _store_as_Token(
+            _generate_token(
+                character_id=character_id,
+                character_name=character_name,
+                scopes=['esi-universe.read_structures.v1'],
+                sso_version=1
+            ),
+            self.user
+        )
         self.token_v2 = _store_as_Token(
             _generate_token(
                 character_id=character_id,
@@ -75,7 +102,7 @@ class TestSSSOMigrations(TestCase):
             'refresh_token': 'refresh_token_2'
         }
 
-        self.call_command("--skip-v1-checks")
+        self.call_command("--skip-v1-checks", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 0)
@@ -89,10 +116,24 @@ class TestSSSOMigrations(TestCase):
             'access_token': 'access_token_2',
             'refresh_token': 'refresh_token_2'
         }
-        self.call_command()
+        self.call_command("-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 1)
+        self.assertEqual(mock_delete.call_count, 0)
+
+    def test_normal_refresh_all(
+        self, mock_v2_refresh, mock_v1_refresh, mock_delete
+    ):
+
+        mock_v1_refresh.return_value = {
+            'access_token': 'access_token_2',
+            'refresh_token': 'refresh_token_2'
+        }
+        self.call_command()
+
+        self.assertEqual(mock_v2_refresh.call_count, 4)
+        self.assertEqual(mock_v1_refresh.call_count, 4)
         self.assertEqual(mock_delete.call_count, 0)
 
     def test_fail_v1_pre_refresh_ignore(
@@ -100,7 +141,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v1_refresh.side_effect = InvalidGrantError
-        self.call_command()
+        self.call_command("-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 0)
         self.assertEqual(mock_v1_refresh.call_count, 1)
@@ -111,7 +152,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v1_refresh.side_effect = InvalidGrantError
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 0)
         self.assertEqual(mock_v1_refresh.call_count, 1)
@@ -122,7 +163,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v1_refresh.side_effect = InvalidTokenError
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 0)
         self.assertEqual(mock_v1_refresh.call_count, 1)
@@ -133,7 +174,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v1_refresh.side_effect = InvalidClientIdError
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 0)
         self.assertEqual(mock_v1_refresh.call_count, 1)
@@ -144,7 +185,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v1_refresh.side_effect = Exception
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 0)
         self.assertEqual(mock_v1_refresh.call_count, 1)
@@ -155,7 +196,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v2_refresh.side_effect = TokenInvalidError
-        self.call_command("--purge", "--skip-v1-checks")
+        self.call_command("--purge", "--skip-v1-checks", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 0)
@@ -166,7 +207,7 @@ class TestSSSOMigrations(TestCase):
     ):
 
         mock_v2_refresh.side_effect = TokenInvalidError
-        self.call_command("--purge", "--skip-v1-checks")
+        self.call_command("--purge", "--skip-v1-checks", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 0)
@@ -182,7 +223,7 @@ class TestSSSOMigrations(TestCase):
         }
         mock_v2_refresh.side_effect = TokenInvalidError
 
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 2)
@@ -198,7 +239,7 @@ class TestSSSOMigrations(TestCase):
         }, InvalidGrantError]
         mock_v2_refresh.side_effect = TokenInvalidError
 
-        self.call_command()
+        self.call_command("-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 2)
@@ -214,7 +255,7 @@ class TestSSSOMigrations(TestCase):
         }, InvalidGrantError]
         mock_v2_refresh.side_effect = TokenInvalidError
 
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 2)
@@ -230,7 +271,7 @@ class TestSSSOMigrations(TestCase):
         }]
         mock_v2_refresh.side_effect = NotRefreshableTokenError
 
-        self.call_command("--purge")
+        self.call_command("--purge", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 1)
@@ -246,7 +287,7 @@ class TestSSSOMigrations(TestCase):
         }]
         mock_v2_refresh.side_effect = TokenInvalidError
 
-        self.call_command("--skip-v1-checks")
+        self.call_command("--skip-v1-checks", "-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 0)
@@ -262,7 +303,7 @@ class TestSSSOMigrations(TestCase):
         }]
         mock_v2_refresh.side_effect = NotRefreshableTokenError
 
-        self.call_command()
+        self.call_command("-n 1")
 
         self.assertEqual(mock_v2_refresh.call_count, 1)
         self.assertEqual(mock_v1_refresh.call_count, 1)

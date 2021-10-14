@@ -66,11 +66,13 @@ class Command(BaseCommand):
                             " updating to SSOv2 and after a failure.")
         parser.add_argument('--purge', action='store_true',
                             help='Purge Tokens that fail the SSOv2 Update')
+        parser.add_argument('-n', help='Number of Tokens to update', type=int)
 
     def handle(self, *args, **options):
         print(options)
         use_v1 = not options.get('skip_v1_checks', False) and (timezone.now() <= EVE_SSOV1_END_DATE)
         purge = options.get('purge', False)
+        batch = options.get('n', False)
 
         migration_10 = MigrationRecorder.Migration.objects.filter(
             app='esi', name="0010_set_new_tokens_to_sso_v2").exists()
@@ -91,6 +93,8 @@ class Command(BaseCommand):
 
         # only do tokens that are SSOv1
         tokens = Token.objects.filter(sso_version=1)
+        if batch:
+            tokens = tokens[:batch]
         total = tokens.count()
 
         if total > 0:
