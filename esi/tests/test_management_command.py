@@ -45,7 +45,7 @@ class TestSSSOMigrations(TestCase):
             ),
             self.user
         )
-        self.token_v1 = _store_as_Token(
+        self.token_v3 = _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -54,7 +54,7 @@ class TestSSSOMigrations(TestCase):
             ),
             self.user
         )
-        self.token_v1 = _store_as_Token(
+        self.token_v4 = _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,
@@ -63,7 +63,7 @@ class TestSSSOMigrations(TestCase):
             ),
             self.user
         )
-        self.token_v1 = _store_as_Token(
+        self.token_v5 = _store_as_Token(
             _generate_token(
                 character_id=character_id,
                 character_name=character_name,

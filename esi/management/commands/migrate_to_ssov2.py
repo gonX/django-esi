@@ -43,16 +43,16 @@ def _sso_v1_refresh(session: OAuth2Session, auth: HTTPBasicAuth, token: Token, m
         token.sso_version = 1
         token.created = timezone.now()
         token.save()
-        return True
+        return (True, None)
     except (InvalidGrantError):
-        return ("ID:%s '%s' %s refresh failed"
-                " (InvalidGrant)" % (token.id, token.character_name, message))
+        return (False, ("ID:%s '%s' %s SSOv1 Refresh failed"
+                " (InvalidGrant)" % (token.id, token.character_name, message)))
     except (InvalidTokenError, InvalidClientIdError):
-        return ("ID:%s '%s' %s SSOv1 Refresh Failed "
-                "(InvalidToken, InvalidClientId)" % (token.id, token.character_name, message))
+        return (False, ("ID:%s '%s' %s SSOv1 Refresh Failed "
+                "(InvalidToken, InvalidClientId)" % (token.id, token.character_name, message)))
     except Exception as e:
-        return ("ID:%s '%s' %s SSOv1 "
-                "Refresh Failed (%s)" % (token.id, token.character_name, message, e))
+        return (False, ("ID:%s '%s' %s SSOv1 "
+                "Refresh Failed (%s)" % (token.id, token.character_name, message, e)))
 
 
 class Command(BaseCommand):
@@ -109,9 +109,9 @@ class Command(BaseCommand):
         with tqdm(total=total) as t:
             for token in tokens:
                 if use_v1:
-                    result = _sso_v1_refresh(session, auth, token, "Initial")
-                    if result is not True:
-                        failures.append(result)
+                    result, message = _sso_v1_refresh(session, auth, token, "Initial")
+                    if not result:
+                        failures.append(message)
                         if purge:
                             token.delete()
                         t.update(1)
@@ -120,17 +120,23 @@ class Command(BaseCommand):
                     token.refresh(session=session, auth=auth)
                 except (TokenInvalidError, IncompleteResponseError):
                     if use_v1:
-                        result = _sso_v1_refresh(session, auth, token, "Post v2 Failure")
-                        if result is not True:
-                            failures.append(result)
+                        result, messaage = _sso_v1_refresh(session, auth, token, "Post v2 Failure")
+                        if not result:
+                            failures.append(messaage)
                             if purge:
                                 token.delete()
                     else:
+                        failures.append("ID:%s '%s' refresh failed"
+                                        " (TokenInvalidError, "
+                                        "IncompleteResponseError)" % (token.id, token.character_name))
                         if purge:
                             token.delete()
                 except NotRefreshableTokenError:
+                    failures.append("ID:%s '%s' refresh failed"
+                                    " (NotRefreshableTokenError)" % (token.id, token.character_name))
                     if purge:
                         token.delete()
+
                 t.update(1)
 
         self.stdout.write("Completed Updates!")
