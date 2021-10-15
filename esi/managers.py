@@ -249,7 +249,7 @@ class TokenManager(models.Manager):
         # parse scopes
         if 'scp' in token_data:
             from esi.models import Scope
-            for s in token_data['scp']:
+            for s in token_data['scp'].split():
                 try:
                     scope = Scope.objects.get(name=s)
                     model.scopes.add(scope)
