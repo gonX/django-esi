@@ -233,7 +233,6 @@ class TokenManager(models.Manager):
         )
 
         token_data = TokenManager.validate_access_token(token.get('access_token', None))
-        # logger.debug(token_data)
 
         # translate returned data to a model
         model = self.create(
@@ -249,7 +248,12 @@ class TokenManager(models.Manager):
         # parse scopes
         if 'scp' in token_data:
             from esi.models import Scope
-            for s in token_data['scp'].split():
+
+            # if a single scope is supplied its a string... recast to list
+            if isinstance(token_data['scp'], str):
+                token_data['scp'] = [token_data['scp']]
+
+            for s in token_data['scp']:
                 try:
                     scope = Scope.objects.get(name=s)
                     model.scopes.add(scope)

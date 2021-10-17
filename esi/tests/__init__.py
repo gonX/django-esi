@@ -14,7 +14,7 @@ def _generate_token(
     access_token: str = 'access_token',
     refresh_token: str = 'refresh_token',
     character_owner_hash: str = 'character_owner_hash',
-    scopes: list = None,
+    scopes=None,  # list or string from ccp
     timestamp_dt: object = None,
     expires_in: int = 1200,
     sso_version: int = 2
@@ -37,7 +37,7 @@ def _generate_token(
         'character_id': character_id,
         'name': character_name,
         'ExpiresOn': _dt_eveformat(timestamp_dt + timedelta(seconds=expires_in)),
-        'scp': ' '.join(list(scopes)),
+        'scp': scopes,
         'token_type': 'character',
         'owner': character_owner_hash,
         'IntellectualProperty': 'EVE',
@@ -63,7 +63,11 @@ def _store_as_Token(token: dict, user: object) -> object:
         character_owner_hash=token['owner'],
         sso_version=token['sso_version']
     )
-    for scope_name in token['scp'].split(' '):
+
+    if isinstance(token['scp'], str):
+        token['scp'] = [token['scp']]
+
+    for scope_name in token['scp']:
         scope, _ = Scope.objects.get_or_create(
             name=scope_name
         )
