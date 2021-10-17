@@ -18,8 +18,7 @@ from ..errors import TokenInvalidError, NotRefreshableTokenError, \
     TokenExpiredError, IncompleteResponseError
 from ..models import Scope, Token, CallbackRedirect
 
-
-_set_logger(logging.getLogger('esi.models'), __file__)
+logger = _set_logger(logging.getLogger('esi.models'), __file__)
 
 
 class TestScope(TestCase):
@@ -228,16 +227,21 @@ class TestToken(TestCase):
         self.assertEqual(x, "Johnny")
         self.assertEqual(mock_esi_client.call_count, 1)
 
-    @patch('esi.models.OAuth2Session', autospec=True)
-    def test_get_token_data(self, mock_OAuth2Session):
-        mock_session = Mock()
-        mock_session.request.return_value.json.return_value = "Johnny"
-        mock_OAuth2Session.return_value = mock_session
-
+    """
+    @patch('esi.managers.TokenManager')
+    def test_get_token_data(self, mock_decode_jwt):
+        mock_decode_jwt._decode_jwt.return_value = \
+            _generate_token(
+                99, 'Bruce Wayne', scopes=[
+                    'esi-calendar.read_calendar_events.v1',
+                    'esi-location.read_location.v1',
+                    'esi-location.read_ship_type.v1',
+                    'esi-unknown-scope'
+                ]
+            )
         data = self.token.get_token_data(access_token='access_token_2')
-        self.assertEqual(data, "Johnny")
-        self.assertEqual(mock_OAuth2Session.call_count, 1)
-
+        self.assertEqual(data['name'], "Bruce Wayne")
+    """
     @patch('esi.models.Token.get_token_data')
     def test_update_token_data_normal_1(self, mock_get_token_data):
         mock_get_token_data.return_value = _generate_token(99, 'Bruce Wayne')
@@ -257,7 +261,7 @@ class TestToken(TestCase):
         )
         self.assertEqual(
             self.token.token_type,
-            'Character'
+            'character'
         )
 
     @patch('esi.models.HTTPBasicAuth', autospec=True)
@@ -277,10 +281,10 @@ class TestToken(TestCase):
         mock_OAuth2Session.return_value = mock_session
 
         mock_get_token_data.return_value = {
-            'CharacterID': 99,
-            'CharacterName': 'CharacterName',
-            'CharacterOwnerHash': 'CharacterOwnerHash',
-            'TokenType': 'Character',
+            'character_id': 99,
+            'name': 'CharacterName',
+            'owner': 'CharacterOwnerHash',
+            'token_type': 'character',
         }
         self.token.created -= timedelta(121)
 
@@ -294,10 +298,10 @@ class TestToken(TestCase):
     @patch('esi.models.Token.get_token_data')
     def test_update_token_data_normal_3(self, mock_get_token_data):
         mock_get_token_data.return_value = {
-            'CharacterID': 99,
-            'CharacterName': 'CharacterName',
-            'CharacterOwnerHash': 'CharacterOwnerHash',
-            'TokenType': 'Character',
+            'character_id': 99,
+            'name': 'CharacterName',
+            'owner': 'CharacterOwnerHash',
+            'token_type': 'Character',
         }
         self.token.update_token_data(commit=False)
         self.assertEqual(

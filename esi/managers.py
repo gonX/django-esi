@@ -1,5 +1,6 @@
 from datetime import timedelta
 import logging
+from typing import Union
 
 import requests
 from requests_oauthlib import OAuth2Session
@@ -10,6 +11,8 @@ from django.utils import timezone
 from .errors import TokenError, IncompleteResponseError
 from . import app_settings
 
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError, JWTClaimsError
 
 logger = logging.getLogger(__name__)
 
@@ -28,22 +31,24 @@ def _process_scopes(scopes):
 
 
 class TokenQueryset(models.QuerySet):
-    def get_expired(self):
-        """
-        Get all tokens which have expired.
-        :return: All expired tokens.
-        :rtype: :class:`esi.managers.TokenQueryset`
+    def get_expired(self) -> models.QuerySet:
+        """Get all tokens which have expired.
+
+        Returns:
+            All expired tokens.
         """
         max_age = \
             timezone.now() - timedelta(seconds=app_settings.ESI_TOKEN_VALID_DURATION)
         return self.filter(created__lte=max_age)
 
-    def bulk_refresh(self):
-        """
-        Refreshes all refreshable tokens in the queryset.
-        Deletes any tokens which fail to refresh.
-        Deletes any tokens which are expired and cannot refresh.
+    def bulk_refresh(self) -> models.QuerySet:
+        """Refresh all refreshable tokens in the queryset and delete any expired token
+        that fails to refresh or can not be refreshed.
+
         Excludes tokens for which the refresh was incomplete for other reasons.
+
+        Returns:
+            All refreshed tokens
         """
         session = OAuth2Session(app_settings.ESI_SSO_CLIENT_ID)
         auth = requests.auth.HTTPBasicAuth(
@@ -62,24 +67,27 @@ class TokenQueryset(models.QuerySet):
         self.filter(refresh_token__isnull=True).get_expired().delete()
         return self.exclude(pk__in=incomplete)
 
-    def require_valid(self):
-        """
-        Ensures all tokens are still valid. If expired, attempts to refresh.
+    def require_valid(self) -> models.QuerySet:
+        """Ensure all tokens are still valid and attempt to refresh any which are expired
+
         Deletes those which fail to refresh or cannot be refreshed.
-        :return: All tokens which are still valid.
-        :rtype: :class:`esi.managers.TokenQueryset`
+
+        Returns:
+            All tokens which are still valid.
         """
         expired = self.get_expired()
         valid = self.exclude(pk__in=expired)
         valid_expired = expired.bulk_refresh()
         return valid_expired | valid
 
-    def require_scopes(self, scope_string):
-        """
-        :param scope_string: The required scopes.
-        :type scope_string: Union[str, list]
-        :return: The tokens with all requested scopes.
-        :rtype: :class:`esi.managers.TokenQueryset`
+    def require_scopes(self, scope_string: Union[str, list]) -> models.QuerySet:
+        """Filter tokens which have at least a subset of given scopes.
+
+        Args:
+            scope_string: The required scopes.
+
+        Returns:
+            Tokens which have all requested scopes.
         """
         scopes = _process_scopes(scope_string)
         if not scopes:
@@ -95,12 +103,14 @@ class TokenQueryset(models.QuerySet):
             tokens = tokens.filter(scopes__pk=pk)
         return tokens
 
-    def require_scopes_exact(self, scope_string):
-        """
-        :param scope_string: The required scopes.
-        :type scope_string: Union[str, list]
-        :return: The tokens with only the requested scopes.
-        :rtype: :class:`esi.managers.TokenQueryset`
+    def require_scopes_exact(self, scope_string: Union[str, list]) -> models.QuerySet:
+        """Filter tokens which exactly have the given scopes.
+
+        Args:
+            scope_string: The required scopes.
+
+        Returns:
+            Tokens which have all requested scopes.
         """
         num_scopes = len(_process_scopes(scope_string))
         scopes_qs = self\
@@ -111,11 +121,11 @@ class TokenQueryset(models.QuerySet):
         pks = [v['pk'] for v in scopes_qs]
         return self.filter(pk__in=pks)
 
-    def equivalent_to(self, token):
-        """
-        Gets all tokens which match the character and scopes of a reference token
-        :param token: :class:`esi.models.Token`
-        :return: :class:`esi.managers.TokenQueryset`
+    def equivalent_to(self, token) -> models.QuerySet:
+        """Fetch all tokens which match the character and scopes of given reference token
+
+        Args:
+            token: :class:`esi.models.Token` reference token
         """
         return self\
             .filter(character_id=token.character_id)\
@@ -131,6 +141,76 @@ class TokenManager(models.Manager):
         :rtype: :class:`esi.managers.TokenQueryset`
         """
         return TokenQueryset(self.model, using=self._db)
+
+    @staticmethod
+    def _decode_jwt(jwt_token: dict, jwk_set: dict, issuer: str):
+        """
+        Helper function to decide the JWT access token supplied by EVE SSO
+        """
+        logger.debug("Start Decode")
+        token_data = jwt.decode(
+            jwt_token,
+            jwk_set,
+            algorithms=jwk_set["alg"],
+            issuer=issuer
+        )
+        token_detail = token_data.get("sub", None).split(":")
+        token_data['character_id'] = int(token_detail[2])
+        token_data['token_type'] = token_detail[0].lower()
+        logger.debug(token_data)
+        return token_data
+
+    @staticmethod
+    def validate_access_token(token: str):
+        """
+        Validate a JWT token retrieved from the EVE SSO.
+        :param token: A JWT token originating from the EVE SSO v2
+        :return: :class:`dict` The contents of the validated JWT token if
+            there are no validation errors
+        """
+
+        res = requests.get(app_settings.ESI_TOKEN_JWK_SET_URL)
+        res.raise_for_status()
+
+        data = res.json()
+
+        try:
+            jwk_sets = data["keys"]
+        except KeyError as e:
+            logger.warning("Something went wrong when retrieving the JWK set. "
+                           "The returned payload did not have the expected key"
+                           "{}. \nPayload returned from the SSO looks like: "
+                           "{}".format(e, data))
+            return None
+
+        jwk_set = next((item for item in jwk_sets if item["alg"] == "RS256"))
+
+        try:
+            return TokenManager._decode_jwt(
+                token,
+                jwk_set,
+                "login.eveonline.com"
+            )
+        # TODO Raise the errors to be handled in the lib
+        except ExpiredSignatureError:
+            logger.warning("The JWT token has expired: {}")
+            return None
+        except JWTError as e:
+            logger.warning("The JWT signature was invalid: {}".format(str(e)))
+            return None
+        except JWTClaimsError:
+            try:
+                return TokenManager._decode_jwt(
+                    token,
+                    jwk_set,
+                    "https://login.eveonline.com"
+                )
+            except JWTClaimsError as e:
+                logger.warning("The issuer claim was not from "
+                               "login.eveonline.com or "
+                               "https://login.eveonline.com: "
+                               "{}".format(str(e)))
+                return None
 
     def create_from_code(self, code, user=None):
         """
@@ -151,26 +231,25 @@ class TokenManager(models.Manager):
             client_secret=app_settings.ESI_SSO_CLIENT_SECRET,
             code=code
         )
-        r = oauth.request('get', app_settings.ESI_TOKEN_VERIFY_URL)
-        r.raise_for_status()
-        token_data = r.json()
-        logger.debug(token_data)
+
+        token_data = TokenManager.validate_access_token(token.get('access_token', None))
+        # logger.debug(token_data)
 
         # translate returned data to a model
         model = self.create(
-            character_id=token_data['CharacterID'],
-            character_name=token_data['CharacterName'],
-            character_owner_hash=token_data['CharacterOwnerHash'],
+            character_id=token_data['character_id'],
+            character_name=token_data['name'],
+            character_owner_hash=token_data['owner'],
             access_token=token['access_token'],
             refresh_token=token['refresh_token'],
-            token_type=token_data['TokenType'],
+            token_type=token_data['token_type'],
             user=user,
         )
 
         # parse scopes
-        if 'Scopes' in token_data:
+        if 'scp' in token_data:
             from esi.models import Scope
-            for s in token_data['Scopes'].split():
+            for s in token_data['scp'].split():
                 try:
                     scope = Scope.objects.get(name=s)
                     model.scopes.add(scope)

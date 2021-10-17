@@ -16,14 +16,12 @@ setup(
         'requests>=2.9.1,<3.0',
         'requests_oauthlib>=0.8.0,<2.0',
         'django>=2.2,<4',
+        'jsonschema<4.0.0',
         'bravado>=10.6.0,<11.0',
         'celery>=4.0.2',
+        'python-jose>=3.3.0,<4.0.0',
+        'tqdm>=4.62.3,<5'
     ],
-    extras_require={
-        "testing": [
-            "requests-mock",
-        ]
-    },
     packages=find_packages(),
     include_package_data=True,
     license='GNU General Public License v3 (GPLv3)',
@@ -37,8 +35,8 @@ setup(
         'Environment :: Web Environment',
         'Framework :: Django',
         'Framework :: Django :: 2.2',
-        'Framework :: Django :: 3.0',
         'Framework :: Django :: 3.1',
+        'Framework :: Django :: 3.2',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
@@ -47,6 +45,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],

@@ -1,5 +1,5 @@
 stages:
-- pre-commit
+- lint
 - test
 - deploy
 
@@ -18,9 +18,13 @@ before_script:
   stage: test
   image: python:3.8-buster
 
+.test-py39:
+  stage: test
+  image: python:3.9-buster
+
 pre-commit-check:
-  stage: pre-commit
-  image: python:3.6-buster
+  stage: lint
+  image: python:3.8-buster
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
@@ -30,50 +34,71 @@ pre-commit-check:
     - pip install pre-commit
     - pre-commit run --all-files
 
+test-docs:
+  stage: lint
+  image: python:3.7-buster
+  script:
+  - tox -e docs
+
 test-36-django22:
   extends: .test-py36
   script:
   - tox -e py36-django22
-
-test-36-django30:
-  extends: .test-py36
-  script:
-  - tox -e py36-django30
 
 test-36-django31:
   extends: .test-py36
   script:
   - tox -e py36-django31
 
+test-36-django32:
+  extends: .test-py36
+  script:
+  - tox -e py36-django32
+
 test-37-django22:
   extends: .test-py37
   script:
   - tox -e py37-django22
-
-test-37-django30:
-  extends: .test-py37
-  script:
-  - tox -e py37-django30
 
 test-37-django31:
   extends: .test-py37
   script:
   - tox -e py37-django31
 
+test-37-django32:
+  extends: .test-py37
+  script:
+  - tox -e py37-django32
+
 test-38-django22:
   extends: .test-py38
   script:
   - tox -e py38-django22
 
-test-38-django30:
-  extends: .test-py38
-  script:
-  - tox -e py38-django30
-
 test-38-django31:
   extends: .test-py38
   script:
   - tox -e py38-django31
+
+test-38-django32:
+  extends: .test-py38
+  script:
+  - tox -e py38-django32
+
+test-39-django22:
+  extends: .test-py39
+  script:
+  - tox -e py39-django22
+
+test-39-django31:
+  extends: .test-py39
+  script:
+  - tox -e py39-django31
+
+test-39-django32:
+  extends: .test-py39
+  script:
+  - tox -e py39-django32
 
 deploy-pypi:
   stage: deploy

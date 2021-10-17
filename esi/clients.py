@@ -4,12 +4,14 @@ import json
 import logging
 from time import sleep
 from urllib import parse as urlparse
+from typing import Any, Union, Tuple
 
 from bravado.client import SwaggerClient
 from bravado import requests_client
 from bravado.exception import (
     HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
 )
+from bravado_core.response import IncomingResponse
 from bravado.swagger_model import Loader
 from bravado.http_future import HttpFuture
 from bravado_core.spec import Spec, CONFIG_DEFAULTS
@@ -34,14 +36,13 @@ RETRY_SLEEP_SECS = 1
 
 
 class CachingHttpFuture(HttpFuture):
+    """Extended wrapper for a FutureAdapter that returns a HTTP response
+    and also supports caching.
+
+    This class contains the response for an ESI request with an ESI client.
     """
-    Used to add caching to certain HTTP requests according to "Expires" header
-    """
-    def _cache_key(self):
-        """
-        Generated the key name used to cache responses
-        :return: formatted cache name
-        """
+    def _cache_key(self) -> str:
+        """Generate the key name used to cache responses."""
         request = self.future.request
         str_hash = md5(
             (
@@ -56,10 +57,13 @@ class CachingHttpFuture(HttpFuture):
 
     @staticmethod
     def _time_to_expiry(expires):
-        """
-        Determines the seconds until a HTTP header "Expires" timestamp
-        :param expires: HTTP response "Expires" header
-        :return: seconds until "Expires" time
+        """Determine the seconds until a HTTP header "Expires" timestamp.
+
+        Args:
+            expires: HTTP response "Expires" header
+
+        Returns:
+            seconds until "Expires" time
         """
         try:
             expires_dt = datetime.strptime(str(expires), '%a, %d %b %Y %H:%M:%S %Z')
@@ -68,12 +72,17 @@ class CachingHttpFuture(HttpFuture):
         except ValueError:
             return 0
 
-    def results(self, **kwargs):
+    def results(self, **kwargs) -> Union[Any, Tuple[Any, IncomingResponse]]:
         """Executes the request and returns the response from ESI for the current
         route. Response will include all pages if there are more available.
 
-        Optional parameters:
-        - timeout: timeout for request to ESI in seconds, overwrites default
+        Args:
+            timeout: (optional) timeout for ESI request in seconds, overwrites default
+
+        Returns:
+            Response from endpoint or a tuple with response from endpoint \
+            and an incoming response object containing additional meta data \
+            including the HTTP response headers
         """
         results = list()
         headers = None
@@ -109,12 +118,15 @@ class CachingHttpFuture(HttpFuture):
 
     def results_localized(self, languages: list = None, **kwargs) -> dict:
         """Executes the request and returns the response from ESI for all default
-        languages and pages (if any). This method returns a dict of all responses
-        with the language code as keys.
+        languages and pages (if any).
 
-        Optional parameters:
-        - languages: list of languages to return instead of all default languages
-        - timeout: timeout for request to ESI in seconds, overwrites default
+        Args:
+            languages: (optional) list of languages to return \
+                instead of default languages
+            timeout: (optional) timeout for ESI request in seconds, overwrites default
+
+        Returns:
+            Dict of all responses with the language code as keys.
         """
         if not languages:
             my_languages = list(app_settings.ESI_LANGUAGES)
@@ -130,13 +142,18 @@ class CachingHttpFuture(HttpFuture):
             for language in my_languages
         }
 
-    def result(self, **kwargs):
+    def result(self, **kwargs) -> Union[Any, Tuple[Any, IncomingResponse]]:
         """Executes the request and returns the response from ESI. Response will
         include the requested / first page only if there are more pages available.
 
-        Optional parameters:
-        - timeout: timeout for request to ESI in seconds, overwrites default
-        - retries: max number of retries, overwrites default
+        Args:
+            timeout: (optional) timeout for ESI request in seconds, overwrites default
+            retries: (optional) max number of retries, overwrites default
+
+        Returns:
+            Response from endpoint or a tuple with response from endpoint \
+            and an incoming response object containing additional meta data \
+            including the HTTP response headers
         """
         if 'language' in kwargs.keys():
             # this parameter is not supported by bravado, so we can't pass it on
@@ -405,29 +422,32 @@ def read_spec(path, http_client=None):
 
 def esi_client_factory(
     token=None,
-    datasource=None,
-    spec_file=None,
-    version=None,
-    app_info_text=None,
+    datasource: str = None,
+    spec_file: str = None,
+    version: str = None,
+    app_info_text: str = None,
     **kwargs
-):
-    """
-    Generates an ESI client.
-    :param token: :class:`esi.Token` used to access authenticated endpoints.
-    :param datasource: Name of the ESI datasource to access.
-    :param spec_file: Absolute path to a swagger spec file to load.
-    :param version: Base ESI API version. Accepted values are 'legacy', 'latest',
-    :param app_info_text: :str: Text identifying the application using ESI
-    which will be included in the User-Agent header. Should contain name and version
-    of the application using ESI. e.g. `"my-app v1.0.0"`.
-    Note that spaces are used as delimiter.
-    :param kwargs: Explicit resource versions to build, in the form Character='v4'.
-    Same values accepted as version.
-    :return: :class:`bravado.client.SwaggerClient`
+) -> SwaggerClient:
+    """Generate a new ESI client.
+
+    Args:
+        token(esi.models.Token): used to access authenticated endpoints.
+        datasource: Name of the ESI datasource to access.
+        spec_file: Absolute path to a swagger spec file to load.
+        version: Base ESI API version. Accepted values are 'legacy', 'latest',
+        app_info_text: Text identifying the application using ESI which will be \
+            included in the User-Agent header. Should contain name and version of the \
+            application using ESI. e.g. `"my-app v1.0.0"`. \
+            Note that spaces are used as delimiter.
+        kwargs: Explicit resource versions to build, in the form Character='v4'. \
+            Same values accepted as version.
 
     If a spec_file is specified, specific versioning is not available.
-    Meaning the version and resource version kwargs
-    are ignored in favour of the versions available in the spec_file.
+    Meaning the version and resource version kwargs are ignored in favour of the
+    versions available in the spec_file.
+
+    Returns:
+        New ESI client
     """
     if app_settings.ESI_INFO_LOGGING_ENABLED:
         logger.info('Generating an ESI client...')
@@ -492,7 +512,23 @@ def minimize_spec(spec_dict, operations=None, resources=None):
 
 
 class EsiClientProvider:
-    """Class for providing a single ESI client instance for the whole app"""
+    """Class for providing a single ESI client instance for the whole app
+
+    Args:
+        datasource: Name of the ESI datasource to access.
+        spec_file: Absolute path to a swagger spec file to load.
+        version: Base ESI API version. Accepted values are 'legacy', 'latest',
+        app_info_text: Text identifying the application using ESI which will be \
+            included in the User-Agent header. Should contain name and version of \
+            the application using ESI. e.g. `"my-app v1.0.0"`. \
+            Note that spaces are used as delimiter.
+        kwargs: Explicit resource versions to build, in the form Character='v4'. \
+            Same values accepted as version.
+
+    If a spec_file is specified, specific versioning is not available.
+    Meaning the version and resource version kwargs are ignored in favour of the
+    versions available in the spec_file.
+    """
 
     _client = None
 
@@ -504,22 +540,6 @@ class EsiClientProvider:
         app_info_text=None,
         **kwargs
     ):
-        """
-        :param datasource: Name of the ESI datasource to access.
-        :param spec_file: Absolute path to a swagger spec file to load.
-        :param version: Base ESI API version.
-        Accepted values are 'legacy', 'latest', 'dev', or 'vX' where X is a number.
-        :param app_info_text: :str: Text identifying the application using ESI
-        which will be included in the User-Agent header. Should contain name
-        and version of the application using ESI. e.g. `"my-app v1.0.0"`.
-        Note that spaces are used as delimiter.
-        :param kwargs: Explicit resource versions to build,
-        in the form Character='v4'. Same values accepted as version.
-
-        If a spec_file is specified, specific versioning is not available.
-        Meaning the version and resource version kwargs
-        are ignored in favour of the versions available in the spec_file.
-        """
         self._datasource = datasource
         self._spec_file = spec_file
         self._version = version

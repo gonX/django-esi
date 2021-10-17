@@ -17,6 +17,7 @@ def _generate_token(
     scopes: list = None,
     timestamp_dt: object = None,
     expires_in: int = 1200,
+    sso_version: int = 2
 ) -> dict:
     from datetime import datetime, timedelta
 
@@ -30,17 +31,17 @@ def _generate_token(
         ]
     token = {
         'access_token': access_token,
-        'token_type': 'Bearer',
         'expires_in': expires_in,
         'refresh_token': refresh_token,
         'timestamp': int(timestamp_dt.timestamp()),
-        'CharacterID': character_id,
-        'CharacterName': character_name,
+        'character_id': character_id,
+        'name': character_name,
         'ExpiresOn': _dt_eveformat(timestamp_dt + timedelta(seconds=expires_in)),
-        'Scopes': ' '.join(list(scopes)),
-        'TokenType': 'Character',
-        'CharacterOwnerHash': character_owner_hash,
-        'IntellectualProperty': 'EVE'
+        'scp': ' '.join(list(scopes)),
+        'token_type': 'character',
+        'owner': character_owner_hash,
+        'IntellectualProperty': 'EVE',
+        'sso_version': sso_version
     }
     return token
 
@@ -56,12 +57,13 @@ def _store_as_Token(token: dict, user: object) -> object:
         access_token=token['access_token'],
         refresh_token=token['refresh_token'],
         user=user,
-        character_id=token['CharacterID'],
-        character_name=token['CharacterName'],
-        token_type=token['TokenType'],
-        character_owner_hash=token['CharacterOwnerHash'],
+        character_id=token['character_id'],
+        character_name=token['name'],
+        token_type=token['token_type'],
+        character_owner_hash=token['owner'],
+        sso_version=token['sso_version']
     )
-    for scope_name in token['Scopes'].split(' '):
+    for scope_name in token['scp'].split(' '):
         scope, _ = Scope.objects.get_or_create(
             name=scope_name
         )

@@ -5,7 +5,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-[Unreleased] - yyyy-mm-dd
+## [Unreleased] - yyyy-mm-dd
+
+## [3.0.0] - 2021-10-17
+
+### Changed
+
+- Updated to SSOv2, A manual migration task (see below) is provided for maximum compatability and reliability
+
+## Migrating to Django-ESI v3.0.0
+ 1. Stop services. `supervisorctl stop myauth:*` 
+ 2. Purge celery queue. `celery -A myauth worker purge`
+ 2. Pip install. `pip install -U django-esi`
+ 2. Migrations. `python myauth/manage.py migrate`
+ 3. Update command. `python myauth/manage.py migrate_to_ssov2`
+    - Additional Options
+      - `--purge` Deletes invalid tokens
+      - `--skip-v1-checks` Skips SSOv1 verifications
+      - `-n #` Migrate a batch, where # is the number of tokens to migrate
+ 4. Restart everything. `supervisorctl start myauth:*`
+
+## [2.1.1] - 2021-09-30
+
+### Changed
+
+- Capped version of `jsonschema` below 4.0.0 due to incompatibilities. [49](https://gitlab.com/allianceauth/django-esi/-/merge_requests/49)
+
+## [2.1.0] - 2021-07-24
+
+### Important update notes
+
+If you have recently installed django-esi with Django 3.2 and are using `BigAutoField` as default for automatically created primary keys, then Django might already have automatically created an additional migration for auto fields.
+
+To prevent this update from creating another migration we recommend to migrate django-esi back to the previous migration and remove the auto field migration **before(!!!)** updating to this version.
+
+You can use this command to check if you have an auto field migration:
+
+```bash
+python manage.py showmigrations esi
+```
+
+The last official migration is `0008_nullable_refresh_token`. The auto field migration would be 0009. If you do not have a 0009 migration no further action is required.
+
+You can then migrate back to 0008 with this command:
+
+```bash
+python manage.py migrate esi 0008
+```
+
+Finally, delete the automatically generated 0009 migration for django-esi from your system.
+
+See the [official documentation](https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys) for more information about the new default for automatically creates primary keys.
+
+### Added
+
+- Add support for Django 3.2
+- Add support for Python 3.9
+- Add documentation on read-the-docs incl. API docs
+
+### Changed
+
+- Remove support for Django 3.0 (EOL on 01 Apr 2021)
+
+### Changed
+
+- Reduce load time, add filters and default ordering for token admin page
 
 ## [2.0.5] - 2020-11-11
 

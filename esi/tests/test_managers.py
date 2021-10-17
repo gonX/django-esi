@@ -489,8 +489,9 @@ class TestTokenManager(TestCase):
     @patch('esi.managers.app_settings.ESI_TOKEN_URL', 'localhost')
     @patch('esi.managers.app_settings.ESI_TOKEN_VERIFY_URL', 'localhost')
     @patch('esi.managers.app_settings.ESI_ALWAYS_CREATE_TOKEN', False)
+    @patch('esi.managers.TokenManager._decode_jwt')
     @patch('esi.managers.OAuth2Session', autospec=True)
-    def test_create_from_code_1(self, mock_OAuth2Session):
+    def test_create_from_code_1(self, mock_OAuth2Session, mock_decode_jwt):
         """Normal case with refresh token"""
         mock_oauth = Mock()
         mock_oauth.request.return_value.json.return_value = \
@@ -509,7 +510,15 @@ class TestTokenManager(TestCase):
             'expires_in': 1200,
         }
         mock_OAuth2Session.return_value = mock_oauth
-
+        mock_decode_jwt.return_value = \
+            _generate_token(
+                99, 'Bruce Wayne', scopes=[
+                    'esi-calendar.read_calendar_events.v1',
+                    'esi-location.read_location.v1',
+                    'esi-location.read_ship_type.v1',
+                    'esi-unknown-scope'
+                ]
+            )
         # create new token from code
         token1 = Token.objects.create_from_code('abc123xyz')
         self.assertEqual(
@@ -532,8 +541,9 @@ class TestTokenManager(TestCase):
     @patch('esi.managers.app_settings.ESI_TOKEN_URL', 'localhost')
     @patch('esi.managers.app_settings.ESI_TOKEN_VERIFY_URL', 'localhost')
     @patch('esi.managers.app_settings.ESI_ALWAYS_CREATE_TOKEN', False)
+    @patch('esi.managers.TokenManager._decode_jwt')
     @patch('esi.managers.OAuth2Session', autospec=True)
-    def test_create_from_code_2(self, mock_OAuth2Session):
+    def test_create_from_code_2(self, mock_OAuth2Session, mock_decode_jwt):
         """Special case w/o refresh token"""
         mock_oauth = Mock()
         mock_oauth.request.return_value.json.return_value = \
@@ -552,7 +562,15 @@ class TestTokenManager(TestCase):
             'expires_in': 1200,
         }
         mock_OAuth2Session.return_value = mock_oauth
-
+        mock_decode_jwt.return_value = \
+            _generate_token(
+                99, 'Bruce Wayne', scopes=[
+                    'esi-calendar.read_calendar_events.v1',
+                    'esi-location.read_location.v1',
+                    'esi-location.read_ship_type.v1',
+                    'esi-unknown-scope'
+                ]
+            )
         # create new token from code
         token1 = Token.objects.create_from_code('abc123xyz')
         self.assertEqual(
