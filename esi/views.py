@@ -10,7 +10,6 @@ from esi.models import CallbackRedirect, Token
 from esi import app_settings
 from .decorators import tokens_required
 
-
 logger = logging.getLogger(__name__)
 
 

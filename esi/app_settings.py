@@ -73,15 +73,18 @@ Can temporarily overwritten with by passing ``timeout`` with ``result()``
 # These probably won't ever change. Override if needed.
 ESI_API_URL = getattr(settings, 'ESI_API_URL', 'https://esi.evetech.net/')
 ESI_OAUTH_URL = getattr(
-    settings, 'ESI_SSO_BASE_URL', 'https://login.eveonline.com/oauth'
+    settings, 'ESI_SSO_BASE_URL', 'https://login.eveonline.com/v2/oauth'
 )
 ESI_OAUTH_LOGIN_URL = getattr(
     settings, 'ESI_SSO_LOGIN_URL', ESI_OAUTH_URL + "/authorize/"
 )
 ESI_TOKEN_URL = getattr(settings, 'ESI_CODE_EXCHANGE_URL', ESI_OAUTH_URL + "/token")
+
 ESI_TOKEN_VERIFY_URL = getattr(
     settings, 'ESI_TOKEN_EXCHANGE_URL', ESI_OAUTH_URL + "/verify"
-)
+)  # deprecated
+ESI_TOKEN_JWK_SET_URL = "https://login.eveonline.com/oauth/jwks"
+
 ESI_TOKEN_VALID_DURATION = int(getattr(settings, 'ESI_TOKEN_VALID_DURATION', 1170))
 ESI_SPEC_CACHE_DURATION = int(getattr(settings, 'ESI_SPEC_CACHE_DURATION', 3600))
 

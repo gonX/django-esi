@@ -104,6 +104,10 @@ class Token(models.Model):
     scopes = models.ManyToManyField(
         Scope, blank=True, help_text="The access scopes granted by this token."
     )
+    sso_version = models.IntegerField(
+        help_text="EVE SSO Version.",
+        default=2
+    )
 
     objects = TokenManager()
 
@@ -193,13 +197,26 @@ class Token(models.Model):
                     auth=auth
                 )
                 logger.debug("Retrieved new token from SSO servers.")
+                # logger.debug(token)
+                token_data = TokenManager.validate_access_token(token['access_token'])
+
+                # TODO verify token properly
+                if token_data is not None:
+                    if self.character_owner_hash != token_data['owner']:
+                        logger.warning("Invalid Owner")
+                        raise InvalidTokenError("Ownership Changed! Revoke me!")
+
                 self.access_token = token['access_token']
                 self.refresh_token = token['refresh_token']
+                self.sso_version = 2  # we will never be ssov1 again
                 self.created = timezone.now()
                 self.save()
                 logger.debug("Successfully refreshed %r", self)
-            except (InvalidGrantError, InvalidTokenError, InvalidClientIdError) as e:
-                logger.info("Refresh failed for %r: %r", self, e)
+            except (InvalidGrantError) as e:  # this token is gone forever
+                logger.error("Refresh impossible for %r: %r", self, e)
+                raise TokenInvalidError()
+            except (InvalidTokenError, InvalidClientIdError) as e:  # these may be recoverable?
+                logger.warning("Refresh failed for %r: %r", self, e)
                 raise TokenInvalidError()
             except MissingTokenError as e:
                 logger.info("Refresh failed for %r: %r", self, e)
@@ -229,11 +246,9 @@ class Token(models.Model):
 
     @classmethod
     def get_token_data(cls, access_token):
-        session = OAuth2Session(
-            app_settings.ESI_SSO_CLIENT_ID, token={'access_token': access_token}
-        )
-        return session.request('get', app_settings.ESI_TOKEN_VERIFY_URL).json()
+        TokenManager.validate_access_token(access_token)
 
+    # unused?
     def update_token_data(self, commit=True):
         logger.debug("Updating token data for %r", self)
         if self.expired:
@@ -243,10 +258,10 @@ class Token(models.Model):
                 raise TokenExpiredError()
         token_data = self.get_token_data(self.access_token)
         logger.debug(token_data)
-        self.character_id = token_data['CharacterID']
-        self.character_name = token_data['CharacterName']
-        self.character_owner_hash = token_data['CharacterOwnerHash']
-        self.token_type = token_data['TokenType']
+        self.character_id = token_data['character_id']
+        self.character_name = token_data['name']
+        self.character_owner_hash = token_data['owner']
+        self.token_type = token_data['token_type']
         logger.debug("Successfully updated token data.")
         if commit:
             self.save()

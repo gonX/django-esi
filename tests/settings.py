@@ -29,3 +29,6 @@ ESI_API_URL = 'https://esi.evetech.net/'
 ESI_SSO_CLIENT_ID = 'test-dummy'
 ESI_SSO_CLIENT_SECRET = 'test-dummy'
 ESI_SSO_CALLBACK_URL = 'http://localhost:8000'
+
+# timezone.now() needs to be tz_aware
+USE_TZ = True

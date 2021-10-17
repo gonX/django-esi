@@ -11,6 +11,8 @@ from django.utils import timezone
 from .errors import TokenError, IncompleteResponseError
 from . import app_settings
 
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError, JWTClaimsError
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +142,76 @@ class TokenManager(models.Manager):
         """
         return TokenQueryset(self.model, using=self._db)
 
+    @staticmethod
+    def _decode_jwt(jwt_token: dict, jwk_set: dict, issuer: str):
+        """
+        Helper function to decide the JWT access token supplied by EVE SSO
+        """
+        logger.debug("Start Decode")
+        token_data = jwt.decode(
+            jwt_token,
+            jwk_set,
+            algorithms=jwk_set["alg"],
+            issuer=issuer
+        )
+        token_detail = token_data.get("sub", None).split(":")
+        token_data['character_id'] = int(token_detail[2])
+        token_data['token_type'] = token_detail[0].lower()
+        logger.debug(token_data)
+        return token_data
+
+    @staticmethod
+    def validate_access_token(token: str):
+        """
+        Validate a JWT token retrieved from the EVE SSO.
+        :param token: A JWT token originating from the EVE SSO v2
+        :return: :class:`dict` The contents of the validated JWT token if
+            there are no validation errors
+        """
+
+        res = requests.get(app_settings.ESI_TOKEN_JWK_SET_URL)
+        res.raise_for_status()
+
+        data = res.json()
+
+        try:
+            jwk_sets = data["keys"]
+        except KeyError as e:
+            logger.warning("Something went wrong when retrieving the JWK set. "
+                           "The returned payload did not have the expected key"
+                           "{}. \nPayload returned from the SSO looks like: "
+                           "{}".format(e, data))
+            return None
+
+        jwk_set = next((item for item in jwk_sets if item["alg"] == "RS256"))
+
+        try:
+            return TokenManager._decode_jwt(
+                token,
+                jwk_set,
+                "login.eveonline.com"
+            )
+        # TODO Raise the errors to be handled in the lib
+        except ExpiredSignatureError:
+            logger.warning("The JWT token has expired: {}")
+            return None
+        except JWTError as e:
+            logger.warning("The JWT signature was invalid: {}".format(str(e)))
+            return None
+        except JWTClaimsError:
+            try:
+                return TokenManager._decode_jwt(
+                    token,
+                    jwk_set,
+                    "https://login.eveonline.com"
+                )
+            except JWTClaimsError as e:
+                logger.warning("The issuer claim was not from "
+                               "login.eveonline.com or "
+                               "https://login.eveonline.com: "
+                               "{}".format(str(e)))
+                return None
+
     def create_from_code(self, code, user=None):
         """
         Perform OAuth code exchange to retrieve a token.
@@ -159,26 +231,25 @@ class TokenManager(models.Manager):
             client_secret=app_settings.ESI_SSO_CLIENT_SECRET,
             code=code
         )
-        r = oauth.request('get', app_settings.ESI_TOKEN_VERIFY_URL)
-        r.raise_for_status()
-        token_data = r.json()
-        logger.debug(token_data)
+
+        token_data = TokenManager.validate_access_token(token.get('access_token', None))
+        # logger.debug(token_data)
 
         # translate returned data to a model
         model = self.create(
-            character_id=token_data['CharacterID'],
-            character_name=token_data['CharacterName'],
-            character_owner_hash=token_data['CharacterOwnerHash'],
+            character_id=token_data['character_id'],
+            character_name=token_data['name'],
+            character_owner_hash=token_data['owner'],
             access_token=token['access_token'],
             refresh_token=token['refresh_token'],
-            token_type=token_data['TokenType'],
+            token_type=token_data['token_type'],
             user=user,
         )
 
         # parse scopes
-        if 'Scopes' in token_data:
+        if 'scp' in token_data:
             from esi.models import Scope
-            for s in token_data['Scopes'].split():
+            for s in token_data['scp'].split():
                 try:
                     scope = Scope.objects.get(name=s)
                     model.scopes.add(scope)
