@@ -125,14 +125,18 @@ class Command(BaseCommand):
                             failures.append(messaage)
                             if purge:
                                 token.delete()
+                        else:
+                            failures.append("ID:%s '%s' SSOv2 Migration failed"
+                                            " (SSOv1 Re-Verification Ok)" % (token.id, token.character_name))
+
                     else:
-                        failures.append("ID:%s '%s' refresh failed"
+                        failures.append("ID:%s '%s' SSOv2 Migration failed"
                                         " (TokenInvalidError, "
                                         "IncompleteResponseError)" % (token.id, token.character_name))
                         if purge:
                             token.delete()
                 except NotRefreshableTokenError:
-                    failures.append("ID:%s '%s' refresh failed"
+                    failures.append("ID:%s '%s' SSOv2 Migration failed"
                                     " (NotRefreshableTokenError)" % (token.id, token.character_name))
                     if purge:
                         token.delete()
