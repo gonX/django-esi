@@ -246,7 +246,7 @@ class Token(models.Model):
 
     @classmethod
     def get_token_data(cls, access_token):
-        TokenManager.validate_access_token(access_token)
+        return TokenManager.validate_access_token(access_token)
 
     # unused?
     def update_token_data(self, commit=True):
