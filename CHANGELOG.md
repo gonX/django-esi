@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Updated to SSOv2, A manual migration task (see below) is provided for maximum compatability and reliability
 
 ## Migrating to Django-ESI v3.0.0
- 1. Stop services. `supervisorctl stop myauth:*` 
+ 1. Stop services. `supervisorctl stop myauth:*`
  2. Purge celery queue. `celery -A myauth worker purge`
  2. Pip install. `pip install -U django-esi`
  2. Migrations. `python myauth/manage.py migrate`
