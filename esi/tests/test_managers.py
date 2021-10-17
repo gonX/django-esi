@@ -491,6 +491,51 @@ class TestTokenManager(TestCase):
     @patch('esi.managers.app_settings.ESI_ALWAYS_CREATE_TOKEN', False)
     @patch('esi.managers.TokenManager._decode_jwt')
     @patch('esi.managers.OAuth2Session', autospec=True)
+    def test_create_from_code_single_scope(self, mock_OAuth2Session, mock_decode_jwt):
+        """Normal case with refresh token"""
+        mock_oauth = Mock()
+        mock_oauth.request.return_value.json.return_value = \
+            _generate_token(
+                99, 'Bruce Wayne', scopes='publicData'
+            )
+        mock_oauth.fetch_token.return_value = {
+            'access_token': 'access_token',
+            'refresh_token': 'refresh_token',
+            'token_type': 'Bearer',
+            'expires_in': 1200,
+        }
+        mock_OAuth2Session.return_value = mock_oauth
+        mock_decode_jwt.return_value = \
+            _generate_token(
+                99, 'Bruce Wayne', scopes='publicData'
+            )
+        # create new token from code
+        token1 = Token.objects.create_from_code('abc123xyz')
+        self.assertEqual(
+            token1.character_id,
+            99
+        )
+        self.assertEqual(
+            token1.character_name,
+            'Bruce Wayne'
+        )
+        self.assertEqual(
+            token1.scopes.all().count(),
+            1
+        )
+        # should return existing token instead of creating a new one
+        # since ESI_ALWAYS_CREATE_TOKEN is False
+        token2 = Token.objects.create_from_code('11abc123xyz')
+        self.assertEqual(token1, token2)
+
+    @patch('esi.managers.app_settings.ESI_SSO_CLIENT_ID', 'abc')
+    @patch('esi.managers.app_settings.ESI_SSO_CLIENT_SECRET', 'xyz')
+    @patch('esi.managers.app_settings.ESI_SSO_CALLBACK_URL', 'localhost')
+    @patch('esi.managers.app_settings.ESI_TOKEN_URL', 'localhost')
+    @patch('esi.managers.app_settings.ESI_TOKEN_VERIFY_URL', 'localhost')
+    @patch('esi.managers.app_settings.ESI_ALWAYS_CREATE_TOKEN', False)
+    @patch('esi.managers.TokenManager._decode_jwt')
+    @patch('esi.managers.OAuth2Session', autospec=True)
     def test_create_from_code_1(self, mock_OAuth2Session, mock_decode_jwt):
         """Normal case with refresh token"""
         mock_oauth = Mock()
@@ -528,6 +573,10 @@ class TestTokenManager(TestCase):
         self.assertEqual(
             token1.character_name,
             'Bruce Wayne'
+        )
+        self.assertEqual(
+            token1.scopes.all().count(),
+            4
         )
 
         # should return existing token instead of creating a new one
@@ -580,6 +629,10 @@ class TestTokenManager(TestCase):
         self.assertEqual(
             token1.character_name,
             'Bruce Wayne'
+        )
+        self.assertEqual(
+            token1.scopes.all().count(),
+            4
         )
 
         # should return existing token instead of creating a new one
