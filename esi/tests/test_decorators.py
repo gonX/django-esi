@@ -371,7 +371,7 @@ class TestTokenRequired(TestCase):
         response = my_view(request)
         self.assertEqual(
             response,
-            'sso_redirect_view_called'
+            self.token
         )
 
     @patch('esi.views.select_token', autospec=True)
@@ -441,13 +441,6 @@ class TestTokenRequired(TestCase):
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-
-        CallbackRedirect.objects.create(
-            session_key=request.session.session_key,
-            url='https://www.example.com/redirect/',
-            state='qwe123',
-            token=self.token
-        )
 
         response = my_view(request)
         self.assertEqual(
