@@ -8,11 +8,12 @@
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <title>ESI Token Selection</title>
+        <title>{% translate "ESI Token Selection" %}</title>
 
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/css/bootstrap.min.css" integrity="sha512-T584yQ/tdRR5QwOpfvDfVQUidzfgc2339Lc8uBDtcp/wYu80d7jwBgAxbyMh0a9YM9F8N3tdErpFI8iaGx6x5g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.slim.min.js" integrity="sha512-6ORWJX/LrnSjBzwefdNUyLCMTIsGoNP6NftMy2UAm1JBm6PRZCO1d7OHBStWpVFZLO+RerTvqX/Z9mBFfCJZ4A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/js/bootstrap.min.js" integrity="sha512-UR25UO94eTnCVwjbXozyeVd6ZqpaAE9naiEUBK/A+QDbfSTQFhPGj5lOR6d8tsgbBk84Ggb5A3EkjsOgPRPcKA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
         <style>
             .character-image{
@@ -38,11 +39,11 @@
     </head>
     <body class="bg-dark">
         <div class="container-fluid mt-5">
-            <h3 class="text-light font-weight-light text-center">Select Character</h3><br>
+            <h3 class="text-light font-weight-light text-center">{% translate "Select Character" %}</h3><br>
             <div class="mt-2">
                 <div class="col-lg-10 offset-lg-1 col-md-12" style="padding-left: 0 !important; padding-right: 0 !important;">
                     <div class="card text-white bg-secondary">
-                        <div class="card-header text-center">Scopes Requested</div>
+                        <div class="card-header text-center">{% translate "Scopes Requested" %}</div>
                         <div class="card-body align-middle text-center">
                             {% for scope in scopes %}<span class="badge badge-dark">{{ scope|scope_friendly_name }}</span> {% endfor %}
                         </div>
@@ -55,7 +56,7 @@
                     {% if tokens|length > 14 %}
                         <form method="post">
                             <div class="card text-white bg-secondary m-2 sso-card">
-                                <div class="card-header text-center">New Character</div>
+                                <div class="card-header text-center">{% translate "New Character" %}</div>
                                 <div class="card-body text-center  d-none d-sm-block">
                                     <input type="image" formmethod="post" class="ra-avatar img-responsive character-image rounded-lg"
                                         src="https://images.evetech.net/characters/1/portrait?size=256">
@@ -83,7 +84,7 @@
                                 <div class="card-footer">
                                         <input type="hidden" name="_token" value="{{ token.pk }}">
                                         <button class="btn btn-success w-100" type="submit" title="Select" formmethod="post">
-                                            Select
+                                            {% translate "Select" %}
                                         </button>
                                 </div>
                             </div>
@@ -92,7 +93,7 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="card text-white bg-secondary m-2 sso-card">
-                            <div class="card-header text-center">New Character</div>
+                            <div class="card-header text-center">{% translate "New Character" %}</div>
                             <div class="card-body text-center  d-none d-sm-block">
                                 <input type="image" formmethod="post" class="ra-avatar img-responsive character-image rounded-lg"
                                     src="https://images.evetech.net/characters/1/portrait?size=256">
