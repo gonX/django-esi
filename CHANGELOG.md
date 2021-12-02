@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Changed
+
+- Replaced date check in migrate_to_ssov2 command with a warning
+
 ## [3.0.0] - 2021-10-17
 
 ### Changed
