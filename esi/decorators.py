@@ -47,9 +47,9 @@ def tokens_required(scopes='', new=False):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
 
-            # if we're coming back from SSO for a new token, return it
+            # if we're coming back from SSO with a new token, return it
             token = _check_callback(request)
-            if token and new:
+            if token:
                 tokens = Token.objects.filter(pk=token.pk)
                 logger.debug("Returning new token.")
                 return view_func(request, tokens, *args, **kwargs)
@@ -105,9 +105,9 @@ def token_required(scopes='', new=False):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
 
-            # if we're coming back from SSO for a new token, return it
+            # if we're coming back from SSO with a new token, return it
             token = _check_callback(request)
-            if token and new:
+            if token:
                 logger.debug(
                     "Got new token from %s session %s. Returning to view.",
                     request.user,
