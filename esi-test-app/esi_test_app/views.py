@@ -43,7 +43,7 @@ def test_single_use_token(request, token):
 def test_token_required_1(request):
     """Preparing environment for test"""
     logger.info('--------------------------------------------')
-    logger.info('starting API test with user {}'.format(request.user.username))
+    logger.info(f'starting API test with user {request.user.username}')
     Token.objects.filter(user=request.user, scopes__name__in=ESI_SCOPES).delete()
     return redirect('esi_test_app:test_token_required_2')
 
@@ -74,7 +74,7 @@ def run_api_test(request):
 
     except Exception as ex:
         test_success = False
-        logger.exception('API test failed: {}'.format(ex))
+        logger.exception(f'API test failed: {ex}')
         error_str = str(ex)
 
     context = {

@@ -112,7 +112,7 @@ class Token(models.Model):
     objects = TokenManager()
 
     def __str__(self):
-        return "%s - %s" % (
+        return "{} - {}".format(
             self.character_name, ", ".join(sorted(s.name for s in self.scopes.all()))
         )
 
@@ -320,7 +320,7 @@ class CallbackRedirect(models.Model):
     )
 
     def __str__(self):
-        return "%s: %s" % (self.session_key, self.url)
+        return f"{self.session_key}: {self.url}"
 
     def __repr__(self):
         return "<{}(pk={}): {} to {}>".format(

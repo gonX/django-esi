@@ -430,7 +430,7 @@ class TestTokenRequired(TestCase):
         mock_sso_redirect.return_value = 'sso_redirect_view_called'
         mock_select_token.return_value = 'select_token_view_called'
 
-        invalid_token_pk = max([int(x.pk) for x in Token.objects.all()]) + 1
+        invalid_token_pk = max(int(x.pk) for x in Token.objects.all()) + 1
         request = self.factory.post(
             'https://www.example.com/my_view/',
             {

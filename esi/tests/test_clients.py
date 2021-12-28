@@ -46,7 +46,7 @@ _set_logger(logging.getLogger(MODULE_PATH), __file__)
 
 
 def _load_json_file(path):
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -88,17 +88,17 @@ class TestClientCache(TestCase):
 
         # hit api
         r = self.c.Status.get_status().result()
-        self.assertEquals(r['players'], 500)
+        self.assertEqual(r['players'], 500)
 
         mock_cache_get.return_value = ({'players': 50}, MockResultFuture())
         # hit cache and pass
         r = self.c.Status.get_status().result()
-        self.assertEquals(r['players'], 50)
+        self.assertEqual(r['players'], 50)
 
         mock_cache_get.return_value = ({'players': 50}, MockResultPast())
         # hit cache fail, re-hit api
         r = self.c.Status.get_status().result()
-        self.assertEquals(r['players'], 500)
+        self.assertEqual(r['players'], 500)
 
     def test_can_handle_exception_from_cache_set(
         self, mock_future_result, mock_cache_get, mock_cache_set
@@ -110,7 +110,7 @@ class TestClientCache(TestCase):
 
         # hit api
         r = self.c.Status.get_status().result()
-        self.assertEquals(r['players'], 500)
+        self.assertEqual(r['players'], 500)
 
     def test_can_handle_exception_from_cache_get(
         self, mock_future_result, mock_cache_get, mock_cache_set
@@ -121,7 +121,7 @@ class TestClientCache(TestCase):
 
         # hit api
         r = self.c.Status.get_status().result()
-        self.assertEquals(r['players'], 500)
+        self.assertEqual(r['players'], 500)
 
 
 @patch(MODULE_PATH + '.app_settings.ESI_SPEC_CACHE_DURATION', 3)
@@ -211,7 +211,7 @@ class TestModuleFunctions(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        with open(SWAGGER_SPEC_PATH_MINIMAL, 'r', encoding='utf-8') as f:
+        with open(SWAGGER_SPEC_PATH_MINIMAL, encoding='utf-8') as f:
             cls.test_spec_dict = json.load(f)
 
     def test_build_cache_name(self):
@@ -308,7 +308,7 @@ class TestEsiClientFactory(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        with open(SWAGGER_SPEC_PATH_MINIMAL, 'r', encoding='utf-8') as f:
+        with open(SWAGGER_SPEC_PATH_MINIMAL, encoding='utf-8') as f:
             cls.test_spec_dict = json.load(f)
 
     def setUp(self):

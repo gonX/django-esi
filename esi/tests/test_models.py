@@ -350,7 +350,7 @@ class TestCallbackRedirect(TestCase):
 
     def test_repr(self):
         self.assertEqual(
-            '<CallbackRedirect(pk=%s): abc to %s>' % (
+            '<CallbackRedirect(pk={}): abc to {}>'.format(
                 self.cb.pk, self.redirect_url
             ),
             repr(self.cb)

@@ -397,7 +397,7 @@ def build_spec(base_version, http_client=None, **kwargs):
                 spec_resource = versioned_spec.resources[resource.capitalize()]
             except KeyError:
                 raise AttributeError(
-                    'Resource {0} not found on API revision {1}'.format(
+                    'Resource {} not found on API revision {}'.format(
                         resource, resource_version
                     )
                 )
@@ -412,7 +412,7 @@ def read_spec(path, http_client=None):
     :param http_client: :class:`bravado.requests_client.RequestsClient`
     :return: :class:`bravado_core.spec.Spec`
     """
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, encoding='utf-8') as f:
         spec_dict = json.loads(f.read())
 
     return SwaggerClient.from_spec(
