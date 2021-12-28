@@ -5,13 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
 ## [Unreleased] - yyyy-mm-dd
 
+## [3.1.0] - 2021-12-29
+
+### Fixed
+
+- Replaced date check in migrate_to_ssov2 command with a warning [55](https://gitlab.com/allianceauth/django-esi/-/merge_requests/55)
+
 ### Changed
+- Automatically Select Newly Added Tokens [53](https://gitlab.com/allianceauth/django-esi/-/merge_requests/53)
+- Updates Bootstrap, jQuery, Font-Awesome dependencies. Adds some Translations [54](https://gitlab.com/allianceauth/django-esi/-/merge_requests/54)
 
-- Replaced date check in migrate_to_ssov2 command with a warning
 
-## [3.0.0] - 2021-10-17
+## [3.0.1] - 2021-10-17
+### Hot Fix
+ - v3.0.0 was pulled, token scopes returned from ESI changed, extra tests to check for this.
+## [~~3.0.0~~] - 2021-10-17
 
 ### Changed
 
