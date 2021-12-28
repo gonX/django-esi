@@ -54,11 +54,6 @@ test-36-django32:
   script:
   - tox -e py36-django32
 
-test-36-django40:
-  extends: .test-py36
-  script:
-  - tox -e py36-django40
-
 test-37-django22:
   extends: .test-py37
   script:
@@ -68,11 +63,6 @@ test-37-django32:
   extends: .test-py37
   script:
   - tox -e py37-django32
-
-test-37-django40:
-  extends: .test-py37
-  script:
-  - tox -e py37-django40
 
 test-38-django22:
   extends: .test-py38
@@ -103,11 +93,6 @@ test-39-django40:
   extends: .test-py39
   script:
   - tox -e py39-django40
-
-test-310-django22:
-  extends: .test-py310
-  script:
-  - tox -e py310-django22
 
 test-310-django32:
   extends: .test-py310
