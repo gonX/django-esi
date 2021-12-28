@@ -8,23 +8,27 @@ before_script:
 
 .test-py36:
   stage: test
-  image: python:3.6-buster
+  image: python:3.6-bullseye
 
 .test-py37:
   stage: test
-  image: python:3.7-buster
+  image: python:3.7-bullseye
 
 .test-py38:
   stage: test
-  image: python:3.8-buster
+  image: python:3.8-bullseye
 
 .test-py39:
   stage: test
-  image: python:3.9-buster
+  image: python:3.9-bullseye
+
+.test-py310:
+  stage: test
+  image: python:3.10-bullseye
 
 pre-commit-check:
   stage: lint
-  image: python:3.8-buster
+  image: python:3.10-bullseye
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
@@ -36,7 +40,7 @@ pre-commit-check:
 
 test-docs:
   stage: lint
-  image: python:3.7-buster
+  image: python:3.10-bullseye
   script:
   - tox -e docs
 
@@ -45,64 +49,79 @@ test-36-django22:
   script:
   - tox -e py36-django22
 
-test-36-django31:
-  extends: .test-py36
-  script:
-  - tox -e py36-django31
-
 test-36-django32:
   extends: .test-py36
   script:
   - tox -e py36-django32
+
+test-36-django40:
+  extends: .test-py36
+  script:
+  - tox -e py36-django40
 
 test-37-django22:
   extends: .test-py37
   script:
   - tox -e py37-django22
 
-test-37-django31:
-  extends: .test-py37
-  script:
-  - tox -e py37-django31
-
 test-37-django32:
   extends: .test-py37
   script:
   - tox -e py37-django32
+
+test-37-django40:
+  extends: .test-py37
+  script:
+  - tox -e py37-django40
 
 test-38-django22:
   extends: .test-py38
   script:
   - tox -e py38-django22
 
-test-38-django31:
-  extends: .test-py38
-  script:
-  - tox -e py38-django31
-
 test-38-django32:
   extends: .test-py38
   script:
   - tox -e py38-django32
+
+test-38-django40:
+  extends: .test-py38
+  script:
+  - tox -e py38-django40
 
 test-39-django22:
   extends: .test-py39
   script:
   - tox -e py39-django22
 
-test-39-django31:
-  extends: .test-py39
-  script:
-  - tox -e py39-django31
-
 test-39-django32:
   extends: .test-py39
   script:
   - tox -e py39-django32
 
+test-39-django40:
+  extends: .test-py39
+  script:
+  - tox -e py39-django40
+
+test-310-django22:
+  extends: .test-py310
+  script:
+  - tox -e py310-django22
+
+test-310-django32:
+  extends: .test-py310
+  script:
+  - tox -e py310-django32
+
+test-310-django40:
+  extends: .test-py310
+  script:
+  - tox -e py310-django40
+
 deploy-pypi:
   stage: deploy
-  image: python:3.6-stretch
+  image: python:3.10-bullseye
 
   before_script:
     - pip install twine
