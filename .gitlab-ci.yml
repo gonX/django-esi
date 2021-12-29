@@ -1,33 +1,18 @@
 stages:
-- lint
+- pre-commit
+- gitlab
 - test
 - deploy
+
+include:
+- template: Dependency-Scanning.gitlab-ci.yml
+- template: Security/SAST.gitlab-ci.yml
 
 before_script:
 - pip install wheel tox twine
 
-.test-py36:
-  stage: test
-  image: python:3.6-bullseye
-
-.test-py37:
-  stage: test
-  image: python:3.7-bullseye
-
-.test-py38:
-  stage: test
-  image: python:3.8-bullseye
-
-.test-py39:
-  stage: test
-  image: python:3.9-bullseye
-
-.test-py310:
-  stage: test
-  image: python:3.10-bullseye
-
 pre-commit-check:
-  stage: lint
+  stage: pre-commit
   image: python:3.10-bullseye
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
@@ -38,8 +23,60 @@ pre-commit-check:
     - pip install pre-commit
     - pre-commit run --all-files
 
+sast:
+  stage: gitlab
+  before_script: []
+
+dependency_scanning:
+  stage: gitlab
+  before_script:
+  - apt-get update && apt-get install redis-server libmariadb-dev -y
+  - redis-server --daemonize yes
+  - python -V
+  - pip install wheel tox
+
+.test-py36:
+  stage: test
+  image: python:3.6-bullseye
+  artifacts:
+  when: always
+  reports:
+    cobertura: coverage.xml
+
+.test-py37:
+  stage: test
+  image: python:3.7-bullseye
+  artifacts:
+  when: always
+  reports:
+    cobertura: coverage.xml
+
+.test-py38:
+  stage: test
+  image: python:3.8-bullseye
+  artifacts:
+  when: always
+  reports:
+    cobertura: coverage.xml
+
+.test-py39:
+  stage: test
+  image: python:3.9-bullseye
+  artifacts:
+  when: always
+  reports:
+    cobertura: coverage.xml
+
+.test-py310:
+  stage: test
+  image: python:3.10-bullseye
+  artifacts:
+  when: always
+  reports:
+    cobertura: coverage.xml
+
 test-docs:
-  stage: lint
+  stage: test
   image: python:3.10-bullseye
   script:
   - tox -e docs
@@ -48,6 +85,7 @@ test-36-django22:
   extends: .test-py36
   script:
   - tox -e py36-django22
+
 
 test-36-django32:
   extends: .test-py36
@@ -112,7 +150,7 @@ deploy-pypi:
     - pip install twine
 
   script:
-    - python setup.py sdist
+    - python setup.py sdist bdist_wheel
     - twine upload dist/*
 
   rules:
