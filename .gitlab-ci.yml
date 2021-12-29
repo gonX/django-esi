@@ -39,41 +39,41 @@ dependency_scanning:
   stage: test
   image: python:3.6-bullseye
   artifacts:
-  when: always
-  reports:
-    cobertura: coverage.xml
+    when: always
+    reports:
+      cobertura: coverage.xml
 
 .test-py37:
   stage: test
   image: python:3.7-bullseye
   artifacts:
-  when: always
-  reports:
-    cobertura: coverage.xml
+    when: always
+    reports:
+      cobertura: coverage.xml
 
 .test-py38:
   stage: test
   image: python:3.8-bullseye
   artifacts:
-  when: always
-  reports:
-    cobertura: coverage.xml
+    when: always
+    reports:
+      cobertura: coverage.xml
 
 .test-py39:
   stage: test
   image: python:3.9-bullseye
   artifacts:
-  when: always
-  reports:
-    cobertura: coverage.xml
+    when: always
+    reports:
+      cobertura: coverage.xml
 
 .test-py310:
   stage: test
   image: python:3.10-bullseye
   artifacts:
-  when: always
-  reports:
-    cobertura: coverage.xml
+    when: always
+    reports:
+      cobertura: coverage.xml
 
 test-docs:
   stage: test
