@@ -321,7 +321,7 @@ class TestToken(TestCase):
             'Character'
         )
 
-    @patch('esi.models.Token.get_token_data', auto_spec=True)
+    @patch('esi.models.Token.get_token_data', auto_spec=True, unsafe=True)
     def test_update_token_data_error(
         self,
         mock_get_token_data
