@@ -282,14 +282,12 @@ class TesReceiveCallbackView(TestCase):
 
 
 class TestSelectTokenView(TestCase):
-
     def setUp(self):
         self.user = User.objects.create_user(
             'Bruce Wayne',
             'abc@example.com',
             'password'
         )
-
         self.token = _store_as_Token(
             _generate_token(
                 character_id=99,
@@ -301,40 +299,31 @@ class TestSelectTokenView(TestCase):
         self.factory = RequestFactory()
         CallbackRedirect.objects.all().delete()
 
-    @patch('esi.views.render', autospec=True)
-    def test_first_call(self, mock_render):
-        mock_render.return_value = 'mock_render_called'
-
+    def test_should_render_select_page_on_first_call(self):
+        # given
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-
+        # when
         response = select_token(request, scopes='abc')
-        self.assertEqual(
-            response,
-            'mock_render_called'
-        )
+        # then
+        self.assertIn("ESI Token Selection", response.content.decode("utf-8"))
 
-    @patch('esi.views.render', autospec=True)
-    def test_second_call(self, mock_render):
-        mock_render.return_value = 'mock_render_called'
-
+    def test_should_render_select_page_on_second_call(self):
+        # given
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
-
         CallbackRedirect.objects.create(
             session_key=request.session.session_key,
             state='state123',
             token=self.token
         )
-
+        # when
         response = select_token(request, scopes='abc', new=True)
-        self.assertEqual(
-            response,
-            'mock_render_called'
-        )
+        # then
+        self.assertIn("ESI Token Selection", response.content.decode("utf-8"))
