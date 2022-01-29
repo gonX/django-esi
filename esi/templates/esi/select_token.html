@@ -10,7 +10,7 @@
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <title>{% translate "ESI Token Selection" %}</title>
+        <title>{% trans "ESI Token Selection" %}</title>
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/css/bootstrap.min.css" integrity="sha512-T584yQ/tdRR5QwOpfvDfVQUidzfgc2339Lc8uBDtcp/wYu80d7jwBgAxbyMh0a9YM9F8N3tdErpFI8iaGx6x5g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.slim.min.js" integrity="sha512-6ORWJX/LrnSjBzwefdNUyLCMTIsGoNP6NftMy2UAm1JBm6PRZCO1d7OHBStWpVFZLO+RerTvqX/Z9mBFfCJZ4A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -41,11 +41,11 @@
     </head>
     <body class="bg-dark">
         <div class="container-fluid mt-5">
-            <h3 class="text-light font-weight-light text-center">{% translate "Select Character" %}</h3><br>
+            <h3 class="text-light font-weight-light text-center">{% trans "Select Character" %}</h3><br>
             <div class="mt-2">
                 <div class="col-lg-10 offset-lg-1 col-md-12" style="padding-left: 0 !important; padding-right: 0 !important;">
                     <div class="card text-white bg-secondary">
-                        <div class="card-header text-center">{% translate "Scopes Requested" %}</div>
+                        <div class="card-header text-center">{% trans "Scopes Requested" %}</div>
                         <div class="card-body align-middle text-center">
                             {% for scope in scopes %}<span class="badge badge-dark">{{ scope|scope_friendly_name }}</span> {% endfor %}
                         </div>
@@ -58,7 +58,7 @@
                     {% if tokens|length > 14 %}
                         <form method="post">
                             <div class="card text-white bg-secondary m-2 sso-card">
-                                <div class="card-header text-center">{% translate "New Character" %}</div>
+                                <div class="card-header text-center">{% trans "New Character" %}</div>
                                 <div class="card-body text-center  d-none d-sm-block">
                                     <input type="image" formmethod="post" class="ra-avatar img-responsive character-image rounded-lg"
                                         src="https://images.evetech.net/characters/1/portrait?size=256">
@@ -86,7 +86,7 @@
                                 <div class="card-footer">
                                         <input type="hidden" name="_token" value="{{ token.pk }}">
                                         <button class="btn btn-success w-100" type="submit" title="Select" formmethod="post">
-                                            {% translate "Select" %}
+                                            {% trans "Select" %}
                                         </button>
                                 </div>
                             </div>
@@ -95,7 +95,7 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="card text-white bg-secondary m-2 sso-card">
-                            <div class="card-header text-center">{% translate "New Character" %}</div>
+                            <div class="card-header text-center">{% trans "New Character" %}</div>
                             <div class="card-body text-center  d-none d-sm-block">
                                 <input type="image" formmethod="post" class="ra-avatar img-responsive character-image rounded-lg"
                                     src="https://images.evetech.net/characters/1/portrait?size=256">
