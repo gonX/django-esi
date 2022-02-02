@@ -6,6 +6,7 @@ from unittest.mock import patch, Mock
 from django.contrib.auth.models import User
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.sessions.middleware import SessionMiddleware
+from django.http import HttpResponse
 from django.test import TestCase, RequestFactory
 
 from . import _generate_token, _store_as_Token, _set_logger
@@ -42,7 +43,7 @@ class TestCheckCallback(TestCase):
         logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -59,7 +60,7 @@ class TestCheckCallback(TestCase):
         logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -70,7 +71,7 @@ class TestCheckCallback(TestCase):
         logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -87,7 +88,7 @@ class TestCheckCallback(TestCase):
         logger.debug('start')
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
 
         response = _check_callback(request)
@@ -123,7 +124,7 @@ class TestTokensRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -142,7 +143,7 @@ class TestTokensRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -171,7 +172,7 @@ class TestTokensRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -190,7 +191,7 @@ class TestTokensRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -219,7 +220,7 @@ class TestTokensRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = mock_user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -268,7 +269,7 @@ class TestTokenRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -296,7 +297,7 @@ class TestTokenRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -317,7 +318,7 @@ class TestTokenRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -357,7 +358,7 @@ class TestTokenRequired(TestCase):
             }
         )
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -397,7 +398,7 @@ class TestTokenRequired(TestCase):
             }
         )
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -438,7 +439,7 @@ class TestTokenRequired(TestCase):
             }
         )
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -478,7 +479,7 @@ class TestSingleUseTokenRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = None
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -499,7 +500,7 @@ class TestSingleUseTokenRequired(TestCase):
 
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = None
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
