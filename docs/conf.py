@@ -40,7 +40,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'myst_parser',
     'sphinx_rtd_theme',
-    'sphinxcontrib_django',
+    'sphinxcontrib_django2',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
