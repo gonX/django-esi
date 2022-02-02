@@ -35,14 +35,6 @@ dependency_scanning:
   - python -V
   - pip install wheel tox
 
-.test-py36:
-  stage: test
-  image: python:3.6-bullseye
-  artifacts:
-    when: always
-    reports:
-      cobertura: coverage.xml
-
 .test-py37:
   stage: test
   image: python:3.7-bullseye
@@ -80,17 +72,6 @@ test-docs:
   image: python:3.10-bullseye
   script:
   - tox -e docs
-
-test-36-django22:
-  extends: .test-py36
-  script:
-  - tox -e py36-django22
-
-
-test-36-django32:
-  extends: .test-py36
-  script:
-  - tox -e py36-django32
 
 test-37-django22:
   extends: .test-py37

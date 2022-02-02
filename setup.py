@@ -11,7 +11,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name='django-esi',
     version=__version__,
-    python_requires='~=3.6',
+    python_requires='~=3.7',
     install_requires=[
         'requests>=2.9.1,<3.0',
         'requests_oauthlib>=0.8.0,<2.0',
@@ -42,7 +42,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
