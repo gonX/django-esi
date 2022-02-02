@@ -1,3 +1,7 @@
+import socket
+from django.test import TestCase
+
+
 def _dt_eveformat(dt: object) -> str:
     """converts a datetime to a string in eve format
     e.g. '2019-06-25T19:04:44'
@@ -102,3 +106,35 @@ def _set_logger(logger: object, name: str) -> object:
     logger.addHandler(f_handler)
     logger.propagate = False
     return logger
+
+
+class SocketAccessError(Exception):
+    """Error raised when a test script accesses the network"""
+
+
+class NoSocketsTestCase(TestCase):
+    """Variation of Django's TestCase class that prevents any network use.
+
+    Example:
+
+        .. code-block:: python
+
+            class TestMyStuff(NoSocketsTestCase):
+                def test_should_do_what_i_need(self):
+                    ...
+
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls.socket_original = socket.socket
+        socket.socket = cls.guard
+        return super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        socket.socket = cls.socket_original
+        return super().tearDownClass()
+
+    @staticmethod
+    def guard(*args, **kwargs):
+        raise SocketAccessError("Attempted to access network")
