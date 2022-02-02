@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.urls import re_path
 
 from . import views
 
@@ -6,5 +6,5 @@ from . import views
 app_name = 'esi'
 
 urlpatterns = [
-    url(r'^callback/$', views.receive_callback, name='callback'),
+    re_path(r'^callback/$', views.receive_callback, name='callback'),
 ]
