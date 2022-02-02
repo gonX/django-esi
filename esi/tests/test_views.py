@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.test import TestCase, RequestFactory
 
 from . import _generate_token, _store_as_Token, _set_logger
@@ -51,7 +51,7 @@ class TestSsoCallbackView(TestCase):
 
         request = self.factory.get(redirect_url)
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -83,7 +83,7 @@ class TestSsoCallbackView(TestCase):
 
         request = self.factory.get(redirect_url)
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -114,7 +114,7 @@ class TestSsoCallbackView(TestCase):
 
         request = self.factory.get(redirect_url)
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -147,7 +147,7 @@ class TestSsoCallbackView(TestCase):
 
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -176,7 +176,7 @@ class TestSsoCallbackView(TestCase):
 
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -195,7 +195,7 @@ class TestSsoCallbackView(TestCase):
     def test_sso_redirect_start_session(self):
         request = self.factory.get('https://www.example.com/callback2/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
 
         sso_redirect(request)
@@ -235,7 +235,7 @@ class TesReceiveCallbackView(TestCase):
 
         request = self.factory.get('https://www.example.com?code=abc&state=123')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -253,7 +253,7 @@ class TesReceiveCallbackView(TestCase):
     def test_missing_code(self):
         request = self.factory.get('https://www.example.com?state=123')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -263,7 +263,7 @@ class TesReceiveCallbackView(TestCase):
     def test_missing_state(self):
         request = self.factory.get('https://www.example.com?code=abc')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -273,7 +273,7 @@ class TesReceiveCallbackView(TestCase):
     def test_missing_callback(self):
         request = self.factory.get('https://www.example.com?code=abc&state=123')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
 
@@ -303,7 +303,7 @@ class TestSelectTokenView(TestCase):
         # given
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
         # when
@@ -315,7 +315,7 @@ class TestSelectTokenView(TestCase):
         # given
         request = self.factory.get('https://www.example.com/my_view/')
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(HttpResponse)
         middleware.process_request(request)
         request.session.save()
         CallbackRedirect.objects.create(
