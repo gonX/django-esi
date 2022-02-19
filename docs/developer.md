@@ -2,6 +2,7 @@
 
 The developer guide describes how to develop apps with *django-esi*.
 
+(section-usage-in-views)=
 ## Usage in views
 
 ### Single token
@@ -112,7 +113,12 @@ def main():
 
 Non-public endpoints will require authentication. You will therefore need to provide a valid access token with your request.
 
-The following example shows how to retrieve data from a non-public endpoint using an already existing token in your database. See also the section [Usage in apps](#usage-in-views) on how to create tokens in your app.
+The following example shows how to retrieve data from a non-public endpoint using an already existing token in your database.
+
+```{seealso}
+
+See also the section {ref}`section-usage-in-views` on how to create tokens in your app.
+```
 
 ```python
 from esi.clients import EsiClientProvider
