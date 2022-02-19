@@ -112,7 +112,7 @@ class Token(models.Model):
     objects = TokenManager()
 
     def __str__(self):
-        return "%s - %s" % (
+        return "{} - {}".format(
             self.character_name, ", ".join(sorted(s.name for s in self.scopes.all()))
         )
 
@@ -212,10 +212,12 @@ class Token(models.Model):
                 self.created = timezone.now()
                 self.save()
                 logger.debug("Successfully refreshed %r", self)
-            except (InvalidGrantError) as e:  # this token is gone forever
+            except (InvalidGrantError) as e:
+                # this token is gone forever
                 logger.error("Refresh impossible for %r: %r", self, e)
                 raise TokenInvalidError()
-            except (InvalidTokenError, InvalidClientIdError) as e:  # these may be recoverable?
+            except (InvalidTokenError, InvalidClientIdError) as e:
+                # these may be recoverable?
                 logger.warning("Refresh failed for %r: %r", self, e)
                 raise TokenInvalidError()
             except MissingTokenError as e:
@@ -320,7 +322,7 @@ class CallbackRedirect(models.Model):
     )
 
     def __str__(self):
-        return "%s: %s" % (self.session_key, self.url)
+        return f"{self.session_key}: {self.url}"
 
     def __repr__(self):
         return "<{}(pk={}): {} to {}>".format(

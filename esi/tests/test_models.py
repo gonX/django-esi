@@ -321,7 +321,7 @@ class TestToken(TestCase):
             'Character'
         )
 
-    @patch('esi.models.Token.get_token_data', auto_spec=True)
+    @patch('esi.models.Token.get_token_data', auto_spec=True, unsafe=True)
     def test_update_token_data_error(
         self,
         mock_get_token_data
@@ -350,7 +350,7 @@ class TestCallbackRedirect(TestCase):
 
     def test_repr(self):
         self.assertEqual(
-            '<CallbackRedirect(pk=%s): abc to %s>' % (
+            '<CallbackRedirect(pk={}): abc to {}>'.format(
                 self.cb.pk, self.redirect_url
             ),
             repr(self.cb)

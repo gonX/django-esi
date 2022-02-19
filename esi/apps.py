@@ -7,5 +7,5 @@ class EsiConfig(AppConfig):
     verbose_name = 'EVE Swagger Interface (SSO v2)'
 
     def ready(self):
-        super(EsiConfig, self).ready()
+        super().ready()
         from esi import checks  # noqa

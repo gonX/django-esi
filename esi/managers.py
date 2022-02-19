@@ -27,7 +27,7 @@ def _process_scopes(scopes):
     # support space-delimited string scopes or lists
     if isinstance(scopes, str):
         scopes = set(scopes.split())
-    return set(str(s) for s in scopes)
+    return {str(s) for s in scopes}
 
 
 class TokenQueryset(models.QuerySet):
@@ -183,7 +183,7 @@ class TokenManager(models.Manager):
                            "{}".format(e, data))
             return None
 
-        jwk_set = next((item for item in jwk_sets if item["alg"] == "RS256"))
+        jwk_set = next(item for item in jwk_sets if item["alg"] == "RS256")
 
         try:
             return TokenManager._decode_jwt(
@@ -196,7 +196,7 @@ class TokenManager(models.Manager):
             logger.warning("The JWT token has expired: {}")
             return None
         except JWTError as e:
-            logger.warning("The JWT signature was invalid: {}".format(str(e)))
+            logger.warning(f"The JWT signature was invalid: {str(e)}")
             return None
         except JWTClaimsError:
             try:
