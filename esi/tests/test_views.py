@@ -3,7 +3,12 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseBadRequest
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    Http404,
+    HttpResponseBadRequest
+)
 from django.test import TestCase, RequestFactory
 
 from . import _generate_token, _store_as_Token, _set_logger
