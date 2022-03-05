@@ -372,7 +372,7 @@ The builtin Django shell allows you to explore the EVE ESI endpoints via django-
 
 ### Prerequisites
 
-Prior to using the Django shell to explore django-esi, you must first [install and configure](operations.html) django-esi in the Django project.
+Prior to using the Django shell to explore django-esi, you must first [install and configure](operations.md) django-esi in the Django project.
 
 ### Getting Started
 
