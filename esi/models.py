@@ -82,10 +82,12 @@ class Token(models.Model):
         help_text="The user to whom this token belongs."
     )
     character_id = models.IntegerField(
+        db_index=True,
         help_text="The ID of the EVE character who authenticated by SSO."
     )
     character_name = models.CharField(
         max_length=100,
+        db_index=True,
         help_text="The name of the EVE character who authenticated by SSO."
     )
     token_type = models.CharField(
@@ -96,6 +98,7 @@ class Token(models.Model):
     )
     character_owner_hash = models.CharField(
         max_length=254,
+        db_index=True,
         help_text=(
             "The unique string identifying this character and its owning EVE "
             "account. Changes if the owning account changes."
