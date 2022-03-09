@@ -76,13 +76,10 @@ class CachingHttpFuture(HttpFuture):
         """Executes the request and returns the response from ESI for the current
         route. Response will include all pages if there are more available.
 
-        Args:
-            timeout: (optional) timeout for ESI request in seconds, overwrites default
+        Accepts same parameters in ``kwargs`` as :meth:`result`
 
         Returns:
-            Response from endpoint or a tuple with response from endpoint \
-            and an incoming response object containing additional meta data \
-            including the HTTP response headers
+            same as :meth:`result`, but for multiple pages
         """
         results = list()
         headers = None
@@ -120,10 +117,11 @@ class CachingHttpFuture(HttpFuture):
         """Executes the request and returns the response from ESI for all default
         languages and pages (if any).
 
+        Accepts same parameters in ``kwargs`` as :meth:`result` plus ``languages``
+
         Args:
             languages: (optional) list of languages to return \
                 instead of default languages
-            timeout: (optional) timeout for ESI request in seconds, overwrites default
 
         Returns:
             Dict of all responses with the language code as keys.
@@ -149,6 +147,8 @@ class CachingHttpFuture(HttpFuture):
         Args:
             timeout: (optional) timeout for ESI request in seconds, overwrites default
             retries: (optional) max number of retries, overwrites default
+            language: (optional) retrieve result for specific language
+            ignore_cache: (optional) set to ``True`` to ignore response caching
 
         Returns:
             Response from endpoint or a tuple with response from endpoint \
@@ -159,21 +159,19 @@ class CachingHttpFuture(HttpFuture):
             # this parameter is not supported by bravado, so we can't pass it on
             self.future.request.params['language'] = str(kwargs.pop('language'))
 
-        if 'retries' in kwargs.keys():
-            max_retries = int(kwargs.pop('retries'))
-        else:
-            max_retries = int(app_settings.ESI_SERVER_ERROR_MAX_RETRIES)
-
-        max_retries = max(0, max_retries)
-
         if 'timeout' not in kwargs:
             kwargs['timeout'] = (
                 app_settings.ESI_REQUESTS_CONNECT_TIMEOUT,
                 app_settings.ESI_REQUESTS_READ_TIMEOUT
             )
 
+        ignore_cache = (
+            kwargs.pop('ignore_cache') if 'ignore_cache' in kwargs.keys() else False
+        )
+
         if (
             app_settings.ESI_CACHE_RESPONSE
+            and not ignore_cache
             and self.future.request.method == 'GET'
             and self.operation is not None
         ):
@@ -198,62 +196,7 @@ class CachingHttpFuture(HttpFuture):
                     cached = False
 
             if not cached:
-                # preserve original value
-                _also_return_response = self.request_config.also_return_response
-                # override to always get the raw response for expiry header
-                self.request_config.also_return_response = True
-
-                retries = 0
-                while retries <= max_retries:
-                    try:
-                        if app_settings.ESI_INFO_LOGGING_ENABLED:
-                            params = self.future.request.params
-                            logger.info(
-                                'Fetching from ESI: %s%s%s',
-                                self.future.request.url,
-                                f' - language {params["language"]}'
-                                if 'language' in params else '',
-                                f' - page {params["page"]}'
-                                if 'page' in params else ''
-                            )
-                        logger.debug(
-                            'ESI request: %s - %s',
-                            self.future.request.url,
-                            self.future.request.params
-                        )
-                        logger.debug(
-                            'ESI request headers: %s', self.future.request.headers
-                        )
-                        result, response = super().result(**kwargs)
-                        logger.debug(
-                            'ESI response status code: %s', response.status_code
-                        )
-                        logger.debug('ESI response headers: %s', response.headers)
-                        logger.debug('ESI response content: %s', response.text)
-                        break
-                    except (
-                        HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
-                    ) as ex:
-                        if retries < max_retries:
-                            logger.warning(
-                                "ESI error (Retry: %d/%d)",
-                                retries,
-                                max_retries,
-                                exc_info=True
-                            )
-                            if retries > 0:
-                                wait_secs = (
-                                    app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR
-                                    * (2 ** (retries - 1))
-                                )
-                                sleep(wait_secs)
-                            retries += 1
-                        else:
-                            raise ex
-
-                # restore original value
-                self.request_config.also_return_response = _also_return_response
-
+                result, response = self._result_with_retries(**kwargs)
                 if response and 'Expires' in response.headers:
                     expires = self._time_to_expiry(response.headers['Expires'])
                     if expires > 0:
@@ -266,10 +209,81 @@ class CachingHttpFuture(HttpFuture):
 
             if self.request_config.also_return_response:
                 return result, response
-            else:
-                return result
+            return result
+
+        elif self.operation is not None:
+            result, response = self._result_with_retries(**kwargs)
+            if self.request_config.also_return_response:
+                return result, response
+            return result
+
+        return super().result(**kwargs)
+
+    def _result_with_retries(self, **kwargs) -> Tuple[Any, IncomingResponse]:
+        """Execute request and retry on certain HTTP errors.
+
+        ``kwargs`` are passed through to super().result()
+
+        Returns:
+            Tuple with response from endpoint and an incoming response object \
+                containing additional meta data including the HTTP response headers
+        """
+        # preserve original value
+        _also_return_response = self.request_config.also_return_response
+        # override to always get the raw response for expiry header
+        self.request_config.also_return_response = True
+
+        if 'retries' in kwargs.keys():
+            max_retries = int(kwargs.pop('retries'))
         else:
-            return super().result(**kwargs)
+            max_retries = int(app_settings.ESI_SERVER_ERROR_MAX_RETRIES)
+        max_retries = max(0, max_retries)
+
+        retries = 0
+        while retries <= max_retries:
+            try:
+                if app_settings.ESI_INFO_LOGGING_ENABLED:
+                    params = self.future.request.params
+                    logger.info(
+                        'Fetching from ESI: %s%s%s',
+                        self.future.request.url,
+                        f' - language {params["language"]}'
+                        if 'language' in params else '',
+                        f' - page {params["page"]}'
+                        if 'page' in params else ''
+                    )
+                logger.debug(
+                    'ESI request: %s - %s',
+                    self.future.request.url,
+                    self.future.request.params
+                )
+                logger.debug('ESI request headers: %s', self.future.request.headers)
+                result, response = super().result(**kwargs)
+                logger.debug('ESI response status code: %s', response.status_code)
+                logger.debug('ESI response headers: %s', response.headers)
+                logger.debug('ESI response content: %s', response.text)
+                break
+            except (HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable) as ex:
+                if retries < max_retries:
+                    retries += 1
+                    logger.warning(
+                        "ESI error - %s %s - Retry: %d/%d",
+                        self.future.request.url,
+                        ex.status_code,
+                        retries,
+                        max_retries
+                    )
+                    wait_secs = (
+                        app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR
+                        * (2 ** (retries - 1))
+                    )
+                    sleep(wait_secs)
+                else:
+                    raise ex
+
+        # restore original value
+        self.request_config.also_return_response = _also_return_response
+        return result, response
 
 
 requests_client.HttpFuture = CachingHttpFuture

@@ -16,6 +16,7 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from . import _generate_token, _store_as_Token, _set_logger, NoSocketsTestCase
+from .factories import create_http_error
 from ..clients import (
     EsiClientProvider,
     esi_client_factory,
@@ -49,12 +50,6 @@ def _load_json_file(path):
         return json.load(f)
 
 
-def my_sleep(value):
-    """mock function for sleep that also checks for valid values"""
-    if value < 0:
-        raise ValueError("sleep length must be non-negative")
-
-
 class MockResultFuture:
     def __init__(self):
         dt = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(seconds=60)
@@ -82,8 +77,10 @@ class TestClientCache(NoSocketsTestCase):
             )
             cls.c = esi_client_factory(spec_file=SWAGGER_SPEC_PATH_MINIMAL)
 
-    def test_cache_expire(self, mock_future_result, mock_cache_get, mock_cache_set):
+    def setUp(self) -> None:
         cache.clear()
+
+    def test_cache_expire(self, mock_future_result, mock_cache_get, mock_cache_set):
         mock_future_result.return_value = ({"players": 500}, MockResultFuture())
         mock_cache_get.return_value = False
 
@@ -101,10 +98,35 @@ class TestClientCache(NoSocketsTestCase):
         r = self.c.Status.get_status().result()
         self.assertEqual(r["players"], 500)
 
+    def test_should_use_cache(self, mock_future_result, mock_cache_get, mock_cache_set):
+        # given
+        mock_future_result.return_value = ({"players": 500}, MockResultFuture())
+        mock_cache_get.return_value = False
+
+        # when
+        r = self.c.Status.get_status().result()
+        # then
+        self.assertEqual(r["players"], 500)
+        self.assertTrue(mock_cache_get.called)
+        self.assertTrue(mock_cache_set.called)
+
+    def test_should_not_use_cache(
+        self, mock_future_result, mock_cache_get, mock_cache_set
+    ):
+        # given
+        mock_future_result.return_value = ({"players": 500}, MockResultFuture())
+        mock_cache_get.return_value = False
+
+        # when
+        r = self.c.Status.get_status().result(ignore_cache=True)
+        # then
+        self.assertEqual(r["players"], 500)
+        self.assertFalse(mock_cache_get.called)
+        self.assertFalse(mock_cache_set.called)
+
     def test_can_handle_exception_from_cache_set(
         self, mock_future_result, mock_cache_get, mock_cache_set
     ):
-        cache.clear()
         mock_future_result.return_value = ({"players": 500}, MockResultFuture())
         mock_cache_get.return_value = False
         mock_cache_set.side_effect = RuntimeError("TEST: Could not write to cache")
@@ -116,7 +138,6 @@ class TestClientCache(NoSocketsTestCase):
     def test_can_handle_exception_from_cache_get(
         self, mock_future_result, mock_cache_get, mock_cache_set
     ):
-        cache.clear()
         mock_future_result.return_value = ({"players": 500}, MockResultFuture())
         mock_cache_get.side_effect = RuntimeError("TEST: Could not read from cache")
 
@@ -457,18 +478,17 @@ class TestClientResult(NoSocketsTestCase):
         self.assertNotIn("language", kwargs)
 
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR", 0.5)
-    @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_MAX_RETRIES", 4)
-    @patch(MODULE_PATH + ".sleep")
+    @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_MAX_RETRIES", 3)
+    @patch(MODULE_PATH + ".sleep", wraps=lambda x: None)
     def test_retries_1(self, mock_sleep, mock_future_result):
-        mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
+        mock_future_result.side_effect = create_http_error(502)
         try:
             self.esi_client.Status.get_status().result()
         except HTTPBadGateway as e:
             # requests error thrown
             self.assertIsInstance(e, HTTPBadGateway)
             # we tried # times before raising
-            self.assertEqual(mock_future_result.call_count, 5)
+            self.assertEqual(mock_future_result.call_count, 4)
             call_list = mock_sleep.call_args_list
             result = [args[0] for args, _ in [x for x in call_list]]
             expected = [0.5, 1.0, 2.0]
@@ -476,10 +496,9 @@ class TestClientResult(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR", 0.5)
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_MAX_RETRIES", 1)
-    @patch(MODULE_PATH + ".sleep")
-    def test_retries_2(self, mock_sleep, mock_future_result):
-        mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
+    @patch(MODULE_PATH + ".sleep", lambda x: None)
+    def test_retries_2(self, mock_future_result):
+        mock_future_result.side_effect = create_http_error(502)
         try:
             self.esi_client.Status.get_status().result()
         except HTTPBadGateway as e:
@@ -490,10 +509,9 @@ class TestClientResult(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR", 0.5)
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_MAX_RETRIES", 0)
-    @patch(MODULE_PATH + ".sleep")
-    def test_retries_3(self, mock_sleep, mock_future_result):
-        mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
+    @patch(MODULE_PATH + ".sleep", lambda x: None)
+    def test_retries_3(self, mock_future_result):
+        mock_future_result.side_effect = create_http_error(502)
         try:
             self.esi_client.Status.get_status().result()
         except HTTPBadGateway as e:
@@ -504,10 +522,9 @@ class TestClientResult(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_BACKOFF_FACTOR", 0.5)
     @patch(MODULE_PATH + ".app_settings.ESI_SERVER_ERROR_MAX_RETRIES", 4)
-    @patch(MODULE_PATH + ".sleep")
-    def test_retry_with_custom_retries(self, mock_sleep, mock_future_result):
-        mock_sleep.side_effect = my_sleep
-        mock_future_result.side_effect = HTTPBadGateway(response=Mock())
+    @patch(MODULE_PATH + ".sleep", lambda x: None)
+    def test_retry_with_custom_retries(self, mock_future_result):
+        mock_future_result.side_effect = create_http_error(502)
         try:
             self.esi_client.Status.get_status().result(retries=1)
         except HTTPBadGateway as e:
