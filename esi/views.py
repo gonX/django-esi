@@ -76,11 +76,8 @@ def receive_callback(request):
     # make sure request has required parameters
     code = request.GET.get('code', None)
     state = request.GET.get('state', None)
-    try:
-        assert code
-        assert state
-    except AssertionError:
-        logger.debug("Missing parameters for code exchange.")
+    if not code or not state:
+        logger.warning("Missing parameters for code exchange.")
         return HttpResponseBadRequest()
 
     callback = get_object_or_404(

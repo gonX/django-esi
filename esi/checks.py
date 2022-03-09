@@ -5,13 +5,11 @@ from django.conf import settings
 @register(Tags.security)
 def check_sso_application_settings(*args, **kwargs):
     errors = []
-    try:
-        assert (
-            settings.ESI_SSO_CLIENT_ID
-            and settings.ESI_SSO_CLIENT_SECRET
-            and settings.ESI_SSO_CALLBACK_URL
-        )
-    except (AssertionError, AttributeError):
+    if (
+        not hasattr(settings, "ESI_SSO_CLIENT_ID")
+        or not hasattr(settings, "ESI_SSO_CLIENT_SECRET")
+        or not hasattr(settings, "ESI_SSO_CALLBACK_URL")
+    ):
         if settings.DEBUG:
             errors.append(
                 Warning(

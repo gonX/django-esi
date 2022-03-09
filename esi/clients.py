@@ -44,16 +44,18 @@ class CachingHttpFuture(HttpFuture):
     def _cache_key(self) -> str:
         """Generate the key name used to cache responses."""
         request = self.future.request
-        str_hash = md5(
-            (
-                request.method
-                + request.url
-                + str(request.params)
-                + str(request.data)
-                + str(request.json)
-            ).encode('utf-8')
-        ).hexdigest()
-        return 'esi_%s' % str_hash
+        data = (
+            request.method
+            + request.url
+            + str(request.params)
+            + str(request.data)
+            + str(request.json)
+        ).encode('utf-8')
+        # The following hash is not used in any security context. It is only used
+        # to generate unique values, collisions are acceptable and "data" is not
+        # coming from user-generated input
+        str_hash = md5(data).hexdigest()  # nosec B303, B303-1
+        return f'esi_{str_hash}'
 
     @staticmethod
     def _time_to_expiry(expires):
