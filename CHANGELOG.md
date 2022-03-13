@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [4.0.0] - 2022-03-13
+
+### Changed
+
+- Drops Python 3.6 Support.
+- Django 4.0 Support https://gitlab.com/allianceauth/django-esi/-/merge_requests/57#8e2edce0d507e1297474f25c00cae94258db38d8
+- Drops Django 3.1 as it is out of support
+- Indexes on used model fields https://gitlab.com/allianceauth/django-esi/-/merge_requests/59
+- Caching can be turned off per request, some request retrying improvements and logging. https://gitlab.com/allianceauth/django-esi/-/merge_requests/60
+
+### Developer
+
+- Test Fixes and Improvements https://gitlab.com/allianceauth/django-esi/-/merge_requests/58 https://gitlab.com/allianceauth/django-esi/-/merge_requests/56
+- Updates to our pre-commits
+- Builds and Distributes bdist to pypi
+- GitLab test coverage support
+- GitLab SAST fixes
+- Adds Docs/Explore.MD for exploring ESI endpoints https://gitlab.com/allianceauth/django-esi/-/merge_requests/62
+
 ## [4.0.0a1] - 2022-02-22
 
 This release is primarily to confirm Django 4.0 support in Alliance Auth 3.x. It is expected to have a stable release along side AA 3.x.
