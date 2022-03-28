@@ -88,6 +88,9 @@ ESI_TOKEN_JWK_SET_URL = "https://login.eveonline.com/oauth/jwks"
 ESI_TOKEN_VALID_DURATION = int(getattr(settings, 'ESI_TOKEN_VALID_DURATION', 1170))
 ESI_SPEC_CACHE_DURATION = int(getattr(settings, 'ESI_SPEC_CACHE_DURATION', 3600))
 
+# Audience claim for JWTs
+ESI_TOKEN_JWT_AUDIENCE = str(getattr(settings, "ESI_TOKEN_JWT_AUDIENCE", "EVE Online"))
+
 # list of all official language codes supported by ESI
 ESI_LANGUAGES = getattr(settings, 'ESI_LANGUAGES', [
     'de', 'en-us', 'fr', 'ja', 'ru', 'zh', 'ko'
