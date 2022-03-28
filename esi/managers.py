@@ -152,7 +152,7 @@ class TokenManager(models.Manager):
             jwt_token,
             jwk_set,
             algorithms=jwk_set["alg"],
-            audience="EVE Online",
+            audience=app_settings.ESI_TOKEN_JWT_AUDIENCE,
             issuer=issuer
         )
         token_detail = token_data.get("sub", None).split(":")
