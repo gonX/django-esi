@@ -1,15 +1,18 @@
 from datetime import timedelta
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
+import requests_mock
 from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponse
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory, TestCase
+from django.utils.timezone import now
 
-from . import _generate_token, _store_as_Token
-from ..errors import TokenError, IncompleteResponseError
+from ..errors import IncompleteResponseError, TokenError
 from ..managers import _process_scopes
 from ..models import Token
+from . import _generate_token, _store_as_Token
+from .jwt_factory import generate_jwk, generate_token
 
 
 class TestProcessScopes(TestCase):
@@ -651,3 +654,57 @@ class TestTokenManager(TestCase):
         x = Token.objects.create_from_request(request)
         self.assertEqual(x, 'we got you')
         self.assertEqual(mock_create_from_code.call_args[0][1], 'abc123')
+
+
+@requests_mock.Mocker()
+class TestTokenManagerValidateAccessToken(TestCase):
+    def test_should_return_token(self, requests_mocker):
+        # given
+        jwks = {"keys": [generate_jwk()]}
+        requests_mocker.register_uri(
+            "GET", url="https://login.eveonline.com/oauth/jwks", json=jwks
+        )
+        access_token, _ = generate_token(1001, "Bruce Wayne")
+        # when
+        token = Token.objects.validate_access_token(access_token)
+        # then
+        self.assertEqual(token["character_id"], 1001)
+        self.assertEqual(token["name"], "Bruce Wayne")
+        self.assertEqual(token["token_type"], "character")
+
+    def test_should_return_none_when_no_jwk(self, requests_mocker):
+        # given
+        jwks = dict()
+        requests_mocker.register_uri(
+            "GET", url="https://login.eveonline.com/oauth/jwks", json=jwks
+        )
+        access_token, _ = generate_token(1001, "Bruce Wayne", audience=False)
+        # when
+        result = Token.objects.validate_access_token(access_token)
+        # then
+        self.assertIsNone(result)
+
+    def test_should_return_none_when_expired(self, requests_mocker):
+        # given
+        jwks = {"keys": [generate_jwk()]}
+        requests_mocker.register_uri(
+            "GET", url="https://login.eveonline.com/oauth/jwks", json=jwks
+        )
+        issued_at = now() - timedelta(hours=3)
+        access_token, _ = generate_token(1001, "Bruce Wayne", issued_at=issued_at)
+        # when
+        result = Token.objects.validate_access_token(access_token)
+        # then
+        self.assertIsNone(result)
+
+    def test_should_return_none_when_invalid(self, requests_mocker):
+        # given
+        jwks = {"keys": [generate_jwk()]}
+        requests_mocker.register_uri(
+            "GET", url="https://login.eveonline.com/oauth/jwks", json=jwks
+        )
+        access_token = "invalid"
+        # when
+        result = Token.objects.validate_access_token(access_token)
+        # then
+        self.assertIsNone(result)
