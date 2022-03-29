@@ -658,13 +658,29 @@ class TestTokenManager(TestCase):
 
 @requests_mock.Mocker()
 class TestTokenManagerValidateAccessToken(TestCase):
-    def test_should_return_token(self, requests_mocker):
+    def test_should_return_token_1(self, requests_mocker):
         # given
         jwks = {"keys": [generate_jwk()]}
         requests_mocker.register_uri(
             "GET", url="https://login.eveonline.com/oauth/jwks", json=jwks
         )
         access_token, _ = generate_token(1001, "Bruce Wayne")
+        # when
+        token = Token.objects.validate_access_token(access_token)
+        # then
+        self.assertEqual(token["character_id"], 1001)
+        self.assertEqual(token["name"], "Bruce Wayne")
+        self.assertEqual(token["token_type"], "character")
+
+    def test_should_return_token_2(self, requests_mocker):
+        # given
+        jwks = {"keys": [generate_jwk()]}
+        requests_mocker.register_uri(
+            "GET", url="https://login.eveonline.com/oauth/jwks", json=jwks
+        )
+        access_token, _ = generate_token(
+            1001, "Bruce Wayne", issuer="https://login.eveonline.com"
+        )
         # when
         token = Token.objects.validate_access_token(access_token)
         # then
