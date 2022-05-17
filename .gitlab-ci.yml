@@ -41,7 +41,9 @@ dependency_scanning:
   artifacts:
     when: always
     reports:
-      cobertura: coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 .test-py38:
   stage: test
@@ -49,7 +51,9 @@ dependency_scanning:
   artifacts:
     when: always
     reports:
-      cobertura: coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 .test-py39:
   stage: test
@@ -57,7 +61,9 @@ dependency_scanning:
   artifacts:
     when: always
     reports:
-      cobertura: coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 .test-py310:
   stage: test
@@ -65,7 +71,9 @@ dependency_scanning:
   artifacts:
     when: always
     reports:
-      cobertura: coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 test-docs:
   stage: test
