@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## UNRELEASED
+## [Unreleased] - yyyy-mm-dd
+
+## Added
+
+- Automatic dark and light mode for Sphinx docs
 
 ### Changed
 
@@ -13,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Drop support for Django 2.2
 - Add support for Python 3.11
 - Add support for Django 4.1
+
+### Fixed
 
 ## [4.0.1] - 2022-03-29
 
