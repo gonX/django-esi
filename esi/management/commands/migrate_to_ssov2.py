@@ -77,7 +77,7 @@ def _sso_v1_refresh(
 class Command(BaseCommand):
     help = "Attempt to Migrate all SSOv1 Tokens to SSOv2, and report failures."
     requires_migrations_checks = True
-    requires_system_checks = True
+    requires_system_checks = '__all__'
 
     def add_arguments(self, parser):
         parser.add_argument(

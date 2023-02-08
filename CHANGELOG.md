@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## UNRELEASED
+
+### Changed
+
+- Drop support for Python 3.7
+- Drop support for Django 2.2
+- Add support for Python 3.11
+- Add support for Django 4.1
+
 ## [4.0.1] - 2022-03-29
 
 ### Fixed
@@ -16,19 +25,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Drops Python 3.6 Support.
-- Django 4.0 Support https://gitlab.com/allianceauth/django-esi/-/merge_requests/57#8e2edce0d507e1297474f25c00cae94258db38d8
+- Django 4.0 Support <https://gitlab.com/allianceauth/django-esi/-/merge_requests/57#8e2edce0d507e1297474f25c00cae94258db38d8>
 - Drops Django 3.1 as it is out of support
-- Indexes on used model fields https://gitlab.com/allianceauth/django-esi/-/merge_requests/59
-- Caching can be turned off per request, some request retrying improvements and logging. https://gitlab.com/allianceauth/django-esi/-/merge_requests/60
+- Indexes on used model fields <https://gitlab.com/allianceauth/django-esi/-/merge_requests/59>
+- Caching can be turned off per request, some request retrying improvements and logging. <https://gitlab.com/allianceauth/django-esi/-/merge_requests/60>
 
 ### Developer
 
-- Test Fixes and Improvements https://gitlab.com/allianceauth/django-esi/-/merge_requests/58 https://gitlab.com/allianceauth/django-esi/-/merge_requests/56
+- Test Fixes and Improvements <https://gitlab.com/allianceauth/django-esi/-/merge_requests/58> <https://gitlab.com/allianceauth/django-esi/-/merge_requests/56>
 - Updates to our pre-commits
 - Builds and Distributes bdist to pypi
 - GitLab test coverage support
 - GitLab SAST fixes
-- Adds Docs/Explore.MD for exploring ESI endpoints https://gitlab.com/allianceauth/django-esi/-/merge_requests/62
+- Adds Docs/Explore.MD for exploring ESI endpoints <https://gitlab.com/allianceauth/django-esi/-/merge_requests/62>
 
 ## [4.0.0a1] - 2022-02-22
 
@@ -37,12 +46,12 @@ This release is primarily to confirm Django 4.0 support in Alliance Auth 3.x. It
 ### Changed
 
 - Drops Python 3.6 Support.
-- Django 4.0 Support https://gitlab.com/allianceauth/django-esi/-/merge_requests/57#8e2edce0d507e1297474f25c00cae94258db38d8
+- Django 4.0 Support <https://gitlab.com/allianceauth/django-esi/-/merge_requests/57#8e2edce0d507e1297474f25c00cae94258db38d8>
 - Drops Django 3.1 as it is out of support
 
 ### Developer
 
-- Test Fixes and Improvements https://gitlab.com/allianceauth/django-esi/-/merge_requests/58 https://gitlab.com/allianceauth/django-esi/-/merge_requests/56
+- Test Fixes and Improvements <https://gitlab.com/allianceauth/django-esi/-/merge_requests/58> <https://gitlab.com/allianceauth/django-esi/-/merge_requests/56>
 - Updates to our pre-commits
 - Builds and Distributes bdist to pypi
 - GitLab test coverage support
@@ -54,13 +63,16 @@ This release is primarily to confirm Django 4.0 support in Alliance Auth 3.x. It
 - Replaced date check in migrate_to_ssov2 command with a warning [55](https://gitlab.com/allianceauth/django-esi/-/merge_requests/55)
 
 ### Changed
+
 - Automatically Select Newly Added Tokens [53](https://gitlab.com/allianceauth/django-esi/-/merge_requests/53)
 - Updates Bootstrap, jQuery, Font-Awesome dependencies. Adds some Translations [54](https://gitlab.com/allianceauth/django-esi/-/merge_requests/54)
 
-
 ## [3.0.1] - 2021-10-17
+
 ### Hot Fix
- - v3.0.0 was pulled, token scopes returned from ESI changed, extra tests to check for this.
+
+- v3.0.0 was pulled, token scopes returned from ESI changed, extra tests to check for this.
+
 ## [~~3.0.0~~] - 2021-10-17
 
 ### Changed
@@ -68,7 +80,9 @@ This release is primarily to confirm Django 4.0 support in Alliance Auth 3.x. It
 - Updated to SSOv2, A manual migration task (see below) is provided for maximum compatability and reliability
 
 ## Migrating to Django-ESI v3.0.0
+
 **Please don't run this close to DT, Larger installs are encouraged to run in batches**
+
  1. Stop services. `supervisorctl stop myauth:*`
  2. Purge celery queue. `celery -A myauth purge`
  3. Pip install. `pip install -U django-esi`
@@ -130,32 +144,32 @@ See the [official documentation](https://docs.djangoproject.com/en/3.2/releases/
 
 ### Changed
 
-- Display improvements to the token selection screen https://gitlab.com/allianceauth/django-esi/-/merge_requests/38
+- Display improvements to the token selection screen <https://gitlab.com/allianceauth/django-esi/-/merge_requests/38>
 
 ## [2.0.4] - 2020-11-11
 
 ### Added
 
-- Adds a User-Agent header as per the ESI Developer best practice https://gitlab.com/allianceauth/django-esi/-/merge_requests/42
+- Adds a User-Agent header as per the ESI Developer best practice <https://gitlab.com/allianceauth/django-esi/-/merge_requests/42>
 
 ### Developer
 
-- Code Style changes, Implementing Pre-Commit Flake8 Checks https://gitlab.com/allianceauth/django-esi/-/merge_requests/43
+- Code Style changes, Implementing Pre-Commit Flake8 Checks <https://gitlab.com/allianceauth/django-esi/-/merge_requests/43>
 
 ## [2.0.3] - 2020-11-11
 
 ### Fixed
 
-- Migration support for MySQL8 https://gitlab.com/allianceauth/django-esi/-/merge_requests/37
-- Retry fixes, Adds Custom Retries https://gitlab.com/allianceauth/django-esi/-/merge_requests/39
-- Cache Exception handling https://gitlab.com/allianceauth/django-esi/-/merge_requests/40
+- Migration support for MySQL8 <https://gitlab.com/allianceauth/django-esi/-/merge_requests/37>
+- Retry fixes, Adds Custom Retries <https://gitlab.com/allianceauth/django-esi/-/merge_requests/39>
+- Cache Exception handling <https://gitlab.com/allianceauth/django-esi/-/merge_requests/40>
 
 ## [2.0.2] - 2020-10-01
 
 ### Fixed
 
-- Django 3.0,3.1 Support and Testing https://gitlab.com/allianceauth/django-esi/-/merge_requests/35
-- use image.evetech CDN https://gitlab.com/allianceauth/django-esi/-/merge_requests/36
+- Django 3.0,3.1 Support and Testing <https://gitlab.com/allianceauth/django-esi/-/merge_requests/35>
+- use image.evetech CDN <https://gitlab.com/allianceauth/django-esi/-/merge_requests/36>
 
 ## [2.0.1] - 2020-09-09
 
@@ -235,7 +249,6 @@ See the [official documentation](https://docs.djangoproject.com/en/3.2/releases/
 - Adopt app to work with requests-oauthlib 1.3.0 [#1](https://gitlab.com/allianceauth/django-esi/issues/1)
 
 ### Fixed
-
 
 ## [1.4.14] - 2018-06-06
 
