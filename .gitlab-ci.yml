@@ -35,16 +35,6 @@ dependency_scanning:
   - python -V
   - pip install wheel tox
 
-.test-py37:
-  stage: test
-  image: python:3.7-bullseye
-  artifacts:
-    when: always
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
-
 .test-py38:
   stage: test
   image: python:3.8-bullseye
@@ -75,26 +65,21 @@ dependency_scanning:
         coverage_format: cobertura
         path: coverage.xml
 
+.test-py311:
+  stage: test
+  image: python:3.11-bullseye
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
 test-docs:
   stage: test
   image: python:3.10-bullseye
   script:
   - tox -e docs
-
-test-37-django22:
-  extends: .test-py37
-  script:
-  - tox -e py37-django22
-
-test-37-django32:
-  extends: .test-py37
-  script:
-  - tox -e py37-django32
-
-test-38-django22:
-  extends: .test-py38
-  script:
-  - tox -e py38-django22
 
 test-38-django32:
   extends: .test-py38
@@ -106,10 +91,10 @@ test-38-django40:
   script:
   - tox -e py38-django40
 
-test-39-django22:
-  extends: .test-py39
+test-38-django41:
+  extends: .test-py38
   script:
-  - tox -e py39-django22
+  - tox -e py38-django41
 
 test-39-django32:
   extends: .test-py39
@@ -121,6 +106,11 @@ test-39-django40:
   script:
   - tox -e py39-django40
 
+test-39-django41:
+  extends: .test-py39
+  script:
+  - tox -e py39-django41
+
 test-310-django32:
   extends: .test-py310
   script:
@@ -130,6 +120,26 @@ test-310-django40:
   extends: .test-py310
   script:
   - tox -e py310-django40
+
+test-310-django41:
+  extends: .test-py310
+  script:
+  - tox -e py310-django41
+
+test-311-django32:
+  extends: .test-py311
+  script:
+  - tox -e py311-django32
+
+test-311-django40:
+  extends: .test-py311
+  script:
+  - tox -e py311-django40
+
+test-311-django41:
+  extends: .test-py311
+  script:
+  - tox -e py311-django41
 
 deploy-pypi:
   stage: deploy

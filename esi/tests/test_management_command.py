@@ -4,7 +4,7 @@ from io import StringIO
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-from django.core.management import call_command
+from django.core.management import call_command as base_call_command
 
 from . import _generate_token, _store_as_Token, _set_logger
 
@@ -23,7 +23,7 @@ _set_logger(logging.getLogger('esi.management.commands.migrate_to_ssov2'), __fil
 @patch('esi.models.Token.delete')
 @patch('requests_oauthlib.OAuth2Session.refresh_token')
 @patch('esi.models.Token.refresh')
-class TestSSSOMigrations(TestCase):
+class TestSSOMigrations(TestCase):
     """tests for SSOv1 to SSOv2 Migration command"""
 
     def setUp(self):
@@ -85,7 +85,7 @@ class TestSSSOMigrations(TestCase):
     def call_command(self, *args, **kwargs):
         std_out = StringIO()
         std_err = StringIO()
-        call_command(
+        base_call_command(
             "migrate_to_ssov2",
             *args,
             stdout=std_out,
