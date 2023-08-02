@@ -96,6 +96,11 @@ test-38-django41:
   script:
   - tox -e py38-django41
 
+test-38-django42:
+  extends: .test-py38
+  script:
+  - tox -e py38-django42
+
 test-39-django32:
   extends: .test-py39
   script:
@@ -110,6 +115,11 @@ test-39-django41:
   extends: .test-py39
   script:
   - tox -e py39-django41
+
+test-39-django42:
+  extends: .test-py39
+  script:
+  - tox -e py39-django42
 
 test-310-django32:
   extends: .test-py310
@@ -126,6 +136,11 @@ test-310-django41:
   script:
   - tox -e py310-django41
 
+test-310-django42:
+  extends: .test-py310
+  script:
+  - tox -e py310-django42
+
 test-311-django32:
   extends: .test-py311
   script:
@@ -140,6 +155,11 @@ test-311-django41:
   extends: .test-py311
   script:
   - tox -e py311-django41
+
+test-311-django42:
+  extends: .test-py311
+  script:
+  - tox -e py311-django42
 
 deploy-pypi:
   stage: deploy
