@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Drop support for Django 2.2
 - Add support for Python 3.11
 - Add support for Django 4.1
+- Migrate build process to PEP 621
 
 ### Fixed
 
