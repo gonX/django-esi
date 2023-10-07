@@ -41,6 +41,14 @@ dependencies = [
     "tqdm>=4.62.3",
 ]
 
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "myst-parser",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-django2"
+]
+
 [project.urls]
 Homepage = "https://gitlab.com/allianceauth/django-esi"
 

@@ -77,7 +77,7 @@ dependency_scanning:
 
 test-docs:
   stage: test
-  image: python:3.10-bullseye
+  image: python:3.11-bookworm
   script:
   - tox -e docs
 
