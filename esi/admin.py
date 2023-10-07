@@ -30,3 +30,11 @@ class TokenAdmin(admin.ModelAdmin):
         'character_name'
     )
     ordering = ('user',)
+    readonly_fields = (
+        'character_id',
+        'character_name',
+        'token_type',
+        'character_owner_hash',
+        'scopes',
+        'sso_version'
+    )

@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Reduce task queue congestion of token refresh
 - Add ability to test celery tasks execution with test suite
 - Migrate build process to PEP 621
+- Shows Token's field, which are defined by the token itself and can not be changed, as read-only (all except user).
+
+### Fixed
+
+- `Token.token_type` is converted lowercase, while choices defines mixed case (issue #26)
 
 ## [4.0.1] - 2022-03-29
 
