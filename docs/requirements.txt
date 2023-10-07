@@ -1,4 +1,0 @@
-Sphinx
-myst-parser
-sphinx_rtd_theme
-sphinxcontrib-django2
