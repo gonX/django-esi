@@ -1,14 +1,9 @@
 """unit tests for esi checks"""
-import logging
 
 from django.conf import settings
 from django.test import TestCase, override_settings
 
-from . import _set_logger
 from ..checks import check_sso_application_settings
-
-
-logger = _set_logger(logging.getLogger('esi.checks'), __file__)
 
 
 class TestCheckSsoApplicationSettings(TestCase):

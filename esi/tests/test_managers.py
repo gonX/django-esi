@@ -1,5 +1,4 @@
 from datetime import timedelta
-import logging
 from unittest.mock import patch, Mock
 
 from django.contrib.auth.models import User
@@ -7,13 +6,10 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponse
 from django.test import TestCase, RequestFactory
 
-from . import _generate_token, _store_as_Token, _set_logger
+from . import _generate_token, _store_as_Token
 from ..errors import TokenError, IncompleteResponseError
 from ..managers import _process_scopes
 from ..models import Token
-
-
-_set_logger(logging.getLogger('esi.managers'), __file__)
 
 
 class TestProcessScopes(TestCase):

@@ -1,4 +1,3 @@
-import logging
 from unittest.mock import patch
 from io import StringIO
 
@@ -6,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.core.management import call_command as base_call_command
 
-from . import _generate_token, _store_as_Token, _set_logger
+from . import _generate_token, _store_as_Token
 
 from esi.errors import (
     TokenInvalidError,
@@ -16,8 +15,6 @@ from esi.errors import (
 from oauthlib.oauth2.rfc6749.errors import InvalidGrantError, \
     InvalidTokenError, \
     InvalidClientIdError
-
-_set_logger(logging.getLogger('esi.management.commands.migrate_to_ssov2'), __file__)
 
 
 @patch('esi.models.Token.delete')
