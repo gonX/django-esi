@@ -2,5 +2,5 @@
 
 default_app_config = 'esi.apps.EsiConfig'
 
-__version__ = '4.0.1'
+__version__ = '5.0.0'
 __title__ = 'django-esi'

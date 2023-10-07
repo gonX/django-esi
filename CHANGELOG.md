@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] - yyyy-mm-dd
+## [5.0.0] - 2023-10-08
 
 ## Added
 
@@ -18,12 +18,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Drop support for Python 3.7
 - Drop support for Django 2.2
-- Remove logger redirect in tests
+- Concurrent Token refresh to reduce task queue congestion
+- Most Token fields are now Read Only in django admin
+
+### Developer
+
 - Add test factories for creating better tests
-- Reduce task queue congestion of token refresh
+- Remove logger redirect in tests
 - Add ability to test celery tasks execution with test suite
 - Migrate build process to PEP 621
-- Shows Token's field, which are defined by the token itself and can not be changed, as read-only (all except user).
+- Migrate docs to PEP 621, update runners to python3.11, update readthedocs to the latest spec and ubuntu 2204
 
 ### Fixed
 
@@ -98,16 +102,16 @@ This release is primarily to confirm Django 4.0 support in Alliance Auth 3.x. It
 
 **Please don't run this close to DT, Larger installs are encouraged to run in batches**
 
- 1. Stop services. `supervisorctl stop myauth:*`
- 2. Purge celery queue. `celery -A myauth purge`
- 3. Pip install. `pip install -U django-esi`
- 4. Migrations. `python myauth/manage.py migrate`
- 5. Update command. `python myauth/manage.py migrate_to_ssov2`
+1.  Stop services. `supervisorctl stop myauth:*`
+2.  Purge celery queue. `celery -A myauth purge`
+3.  Pip install. `pip install -U django-esi`
+4.  Migrations. `python myauth/manage.py migrate`
+5.  Update command. `python myauth/manage.py migrate_to_ssov2`
     - Additional Options
       - `--purge` Deletes invalid tokens
       - `--skip-v1-checks` Skips SSOv1 verifications
       - `-n #` Migrate a batch, where # is the number of tokens to migrate
- 6. Restart everything. `supervisorctl start myauth:*`
+6.  Restart everything. `supervisorctl start myauth:*`
 
 ## [2.1.1] - 2021-09-30
 
