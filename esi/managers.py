@@ -1,6 +1,6 @@
 from datetime import timedelta
 import logging
-from typing import Union
+from typing import Union, Any
 
 import requests
 from requests_oauthlib import OAuth2Session
@@ -12,7 +12,7 @@ from .errors import TokenError, IncompleteResponseError
 from . import app_settings
 
 from jose import jwt
-from jose.exceptions import ExpiredSignatureError, JWTError, JWTClaimsError
+from jose.exceptions import ExpiredSignatureError, JWTError
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class TokenManager(models.Manager):
         return TokenQueryset(self.model, using=self._db)
 
     @staticmethod
-    def _decode_jwt(jwt_token: dict, jwk_set: dict, issuer: str):
+    def _decode_jwt(jwt_token: dict, jwk_set: dict, issuer: Any):
         """
         Helper function to decide the JWT access token supplied by EVE SSO
         """
@@ -172,46 +172,33 @@ class TokenManager(models.Manager):
 
         res = requests.get(app_settings.ESI_TOKEN_JWK_SET_URL)
         res.raise_for_status()
-
         data = res.json()
 
         try:
             jwk_sets = data["keys"]
         except KeyError as e:
-            logger.warning("Something went wrong when retrieving the JWK set. "
-                           "The returned payload did not have the expected key"
-                           "{}. \nPayload returned from the SSO looks like: "
-                           "{}".format(e, data))
+            logger.warning(
+                "Something went wrong when retrieving the JWK set. "
+                "The returned payload did not have the expected key %s.\n"
+                "Payload returned from the SSO looks like: %s",
+                e,
+                data
+            )
             return None
 
-        jwk_set = next(item for item in jwk_sets if item["alg"] == "RS256")
-
+        jwk_set = [item for item in jwk_sets if item["alg"] == "RS256"].pop()
         try:
             return TokenManager._decode_jwt(
                 token,
                 jwk_set,
-                "login.eveonline.com"
+                ("login.eveonline.com", "https://login.eveonline.com")
             )
-        # TODO Raise the errors to be handled in the lib
         except ExpiredSignatureError:
-            logger.warning("The JWT token has expired: {}")
+            logger.warning("The JWT token has expired")
             return None
         except JWTError as e:
-            logger.warning(f"The JWT signature was invalid: {str(e)}")
+            logger.warning("The JWT signature was invalid: %s", e)
             return None
-        except JWTClaimsError:
-            try:
-                return TokenManager._decode_jwt(
-                    token,
-                    jwk_set,
-                    "https://login.eveonline.com"
-                )
-            except JWTClaimsError as e:
-                logger.warning("The issuer claim was not from "
-                               "login.eveonline.com or "
-                               "https://login.eveonline.com: "
-                               "{}".format(str(e)))
-                return None
 
     def create_from_code(self, code, user=None):
         """
