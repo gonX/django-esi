@@ -17,6 +17,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from . import app_settings
 from .clients import esi_client_factory
@@ -65,6 +66,13 @@ class Token(models.Model):
     Contains the access token required for ESI authentication as well as refreshing.
     """
 
+    TOKEN_TYPE_CHARACTER = "character"
+    TOKEN_TYPE_CORPORATION = "corporation"
+    TOKEN_TYPE_CHOICES = [
+        (TOKEN_TYPE_CHARACTER, _('Character')),
+        (TOKEN_TYPE_CORPORATION, _('Corporation')),
+    ]
+
     created = models.DateTimeField(auto_now_add=True)
     access_token = models.TextField(
         help_text="The access token granted by SSO.",
@@ -93,8 +101,8 @@ class Token(models.Model):
     )
     token_type = models.CharField(
         max_length=100,
-        choices=(('Character', 'Character'), ('Corporation', 'Corporation'),),
-        default='Character',
+        choices=TOKEN_TYPE_CHOICES,
+        default=TOKEN_TYPE_CHARACTER,
         help_text="The applicable range of the token."
     )
     character_owner_hash = models.CharField(
