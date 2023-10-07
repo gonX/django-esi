@@ -1,7 +1,0 @@
-include LICENSE
-include README.md
-recursive-include esi/static *
-recursive-include esi/templates *
-recursive-include esi/management *
-recursive-exclude esi-test-app *
-recursive-exclude esi/tests *

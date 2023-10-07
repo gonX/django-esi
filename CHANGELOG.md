@@ -10,13 +10,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Added
 
 - Automatic dark and light mode for Sphinx docs
+- Add support for Python 3.11
+- Add support for Django 4.1
+- Add support for Django 4.2
 
 ### Changed
 
 - Drop support for Python 3.7
 - Drop support for Django 2.2
-- Add support for Python 3.11
-- Add support for Django 4.1
+- Migrate build process to PEP 621
 
 ### Fixed
 
