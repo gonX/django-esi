@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import logging
 import os
 from unittest.mock import patch, Mock
 import json
@@ -15,7 +14,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.utils import timezone
 
-from . import _generate_token, _store_as_Token, _set_logger, NoSocketsTestCase
+from . import _generate_token, _store_as_Token, NoSocketsTestCase
 from .factories import create_http_error
 from ..clients import (
     EsiClientProvider,
@@ -42,7 +41,6 @@ SWAGGER_SPEC_PATH_FULL = os.path.join(
 )
 
 MODULE_PATH = "esi.clients"
-_set_logger(logging.getLogger(MODULE_PATH), __file__)
 
 
 def _load_json_file(path):

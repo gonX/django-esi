@@ -1,140 +1,61 @@
 from datetime import timedelta
-import logging
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
-from django.test import TestCase
+from celery import current_app as celery_app
+from django.utils.timezone import now
 
-from . import _generate_token, _store_as_Token, _set_logger
-from ..models import CallbackRedirect, Token
-from ..tasks import cleanup_callbackredirect, cleanup_token
+from esi.models import CallbackRedirect, Token
+from esi.tasks import cleanup_callbackredirect, cleanup_token
+
+from . import NoSocketsTestCase
+from .factories_2 import TokenFactory, CallbackRedirectFactory
+
+MANAGERS_PATH = "esi.managers"
+MODELS_PATH = "esi.models"
 
 
-_set_logger(logging.getLogger('esi.tasks'), __file__)
+class CeleryTestCase(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        celery_app.conf.task_always_eager = True
+        celery_app.conf.task_eager_propagates = True
 
 
-class TestTasks(TestCase):
+class TestCleanupCallbackredirect(CeleryTestCase):
+    def test_should_remove_expired(self):
+        # given
+        cb_valid = CallbackRedirectFactory()
+        with patch("django.utils.timezone.now") as m:
+            m.return_value = now() - timedelta(minutes=5, seconds=1)
+            cb_expired = CallbackRedirectFactory()
+        # when
+        cleanup_callbackredirect.delay(max_age=300)
+        # then
+        self.assertTrue(CallbackRedirect.objects.filter(pk=cb_valid.pk).exists())
+        self.assertFalse(CallbackRedirect.objects.filter(pk=cb_expired.pk).exists())
 
-    def setUp(self):
-        self.user1 = User.objects.create_user(
-            'Bruce Wayne',
-            'abc@example.com',
-            'password'
-        )
-        self.user2 = User.objects.create_user(
-            'Peter Parker',
-            'abc@example.com',
-            'password'
-        )
-        Token.objects.all().delete()
 
-    def test_cleanup_callbackredirect_default(self):
-        CallbackRedirect.objects.all().delete()
-        callback_url = 'https://www.example.com/redirect/'
-        c1_valid = CallbackRedirect.objects.create(
-            session_key='abc1',
-            state='xyz1',
-            url=callback_url
-        )
-        c2_expired = CallbackRedirect.objects.create(
-            session_key='abc2',
-            state='xyz2',
-            url=callback_url
-        )
-        c3_valid = CallbackRedirect.objects.create(
-            session_key='abc3',
-            state='xyz3',
-            url=callback_url
-        )
-        c2_expired.created -= timedelta(seconds=301)
-        c2_expired.save()
-        cleanup_callbackredirect()
+@patch(MANAGERS_PATH + '.app_settings.ESI_TOKEN_VALID_DURATION', 120)
+@patch(MODELS_PATH + '.Token.refresh', spec=True)
+class TestCleanupToken(CeleryTestCase):
+    def test_should_delete_orphaned_tokens(self, mock_token_refresh):
+        # given
+        token_1 = TokenFactory(user=None)
+        token_2 = TokenFactory()
+        # when
+        cleanup_token.delay()
+        # then
+        self.assertFalse(Token.objects.filter(pk=token_1.pk).exists())
+        self.assertTrue(Token.objects.filter(pk=token_2.pk).exists())
 
-        self.assertSetEqual(
-            set(CallbackRedirect.objects.all()),
-            {c1_valid, c3_valid}
-        )
-
-    def test_cleanup_callbackredirect_custom_age(self):
-        CallbackRedirect.objects.all().delete()
-        callback_url = 'https://www.example.com/redirect/'
-        c1_valid = CallbackRedirect.objects.create(
-            session_key='abc1',
-            state='xyz1',
-            url=callback_url
-        )
-        c2_expired = CallbackRedirect.objects.create(
-            session_key='abc2',
-            state='xyz2',
-            url=callback_url
-        )
-        c3_valid = CallbackRedirect.objects.create(
-            session_key='abc3',
-            state='xyz3',
-            url=callback_url
-        )
-        c2_expired.created -= timedelta(seconds=601)
-        c2_expired.save()
-        c3_valid.created -= timedelta(seconds=301)
-        c3_valid.save()
-        cleanup_callbackredirect(max_age=600)
-
-        self.assertSetEqual(
-            set(CallbackRedirect.objects.all()),
-            {c1_valid, c3_valid}
-        )
-
-    @patch('esi.models.Token.refresh', autospec=True)
-    @patch('esi.managers.app_settings.ESI_TOKEN_VALID_DURATION', 120)
-    def test_cleanup_token(self, mock_token_refresh):
-        _store_as_Token(
-            _generate_token(
-                character_id=101,
-                character_name=self.user1.username,
-                scopes=['abc', 'xyz']
-            ),
-            self.user1
-        )
-        t_expired_1 = _store_as_Token(
-            _generate_token(
-                character_id=102,
-                character_name=self.user2.username,
-                scopes=['xyz']
-            ),
-            self.user2
-        )
-        _store_as_Token(
-            _generate_token(
-                character_id=101,
-                character_name=self.user1.username,
-                scopes=['abc', '123']
-            ),
-            self.user1
-        )
-        t_expired_2 = _store_as_Token(
-            _generate_token(
-                character_id=102,
-                character_name=self.user2.username,
-                scopes=['123']
-            ),
-            self.user2
-        )
-        t_no_user_1 = _store_as_Token(
-            _generate_token(
-                character_id=1234,
-                character_name="No User",
-                scopes=['123']
-            ),
-            None
-        )
-
-        t_expired_1.created -= timedelta(121)
-        t_expired_1.save()
-        t_expired_2.created -= timedelta(121)
-        t_expired_2.save()
-
-        cleanup_token()
-        self.assertEqual(mock_token_refresh.call_count, 2)
-
-        all_tokens = Token.objects.all()
-        self.assertNotIn(t_no_user_1, all_tokens)
+    def test_should_refresh_expired_tokens_only(self, mock_token_refresh):
+        # given
+        TokenFactory()
+        with patch("django.utils.timezone.now") as m:
+            m.return_value = now() - timedelta(minutes=3)
+            TokenFactory()
+        # when
+        cleanup_token.delay()
+        # then
+        self.assertEqual(mock_token_refresh.call_count, 1)

@@ -18,9 +18,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Drop support for Python 3.7
 - Drop support for Django 2.2
+- Remove logger redirect in tests
+- Add test factories for creating better tests
+- Reduce task queue congestion of token refresh
+- Add ability to test celery tasks execution with test suite
 - Migrate build process to PEP 621
-
-### Fixed
 
 ## [4.0.1] - 2022-03-29
 

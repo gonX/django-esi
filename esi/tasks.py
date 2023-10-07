@@ -30,7 +30,23 @@ def cleanup_token():
     """
     Delete expired :model:`esi.Token` models.
     """
-    logger.debug("Clearring Userless Tokens.")
-    Token.objects.filter(user__isnull=True).delete()
-    logger.debug("Triggering bulk refresh of all expired tokens.")
-    Token.objects.all().get_expired().bulk_refresh()
+    orphaned_tokens = Token.objects.filter(user__isnull=True)
+    if orphaned_tokens.exists():
+        logger.info("Deleting %d orphaned tokens.", orphaned_tokens.count())
+        orphaned_tokens.delete()
+    expired_tokens = Token.objects.exclude(user__isnull=True).get_expired()
+    if expired_tokens.exists():
+        logger.info(
+            "Triggering bulk refresh of %d expired tokens.", expired_tokens.count()
+        )
+        for token_pk in (
+            expired_tokens.filter(refresh_token__isnull=False)
+            .values_list("pk", flat=True)
+        ):
+            refresh_or_delete_token.apply_async(args=[token_pk], priority=8)
+
+
+@shared_task
+def refresh_or_delete_token(token_pk: int):
+    token = Token.objects.get(pk=token_pk)
+    token.refresh_or_delete()

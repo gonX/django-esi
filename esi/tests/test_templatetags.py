@@ -1,12 +1,7 @@
 """unit tests for esi"""
 
-import logging
-
 from django.test import TestCase
 from ..templatetags.scope_tags import scope_friendly_name
-from . import _set_logger
-
-_set_logger(logging.getLogger('esi'), __file__)
 
 
 class TestScope(TestCase):

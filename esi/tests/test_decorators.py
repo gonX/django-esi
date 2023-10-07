@@ -9,14 +9,14 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponse
 from django.test import TestCase, RequestFactory
 
-from . import _generate_token, _store_as_Token, _set_logger
+from . import _generate_token, _store_as_Token
 from ..decorators import (
     _check_callback, tokens_required, token_required, single_use_token
 )
 from ..models import Token, CallbackRedirect
 
 
-logger = _set_logger(logging.getLogger('esi.decorators'), __file__)
+logger = logging.getLogger(__name__)
 
 
 class TestCheckCallback(TestCase):

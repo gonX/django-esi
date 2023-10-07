@@ -1,4 +1,3 @@
-import logging
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -11,12 +10,10 @@ from django.http import (
 )
 from django.test import TestCase, RequestFactory
 
-from . import _generate_token, _store_as_Token, _set_logger
+from . import _generate_token, _store_as_Token
 from ..models import CallbackRedirect
 from ..views import sso_redirect, receive_callback, select_token
 
-
-_set_logger(logging.getLogger('esi.views'), __file__)
 
 ESI_SSO_CLIENT_ID = 'abc'
 ESI_SSO_CALLBACK_URL = 'https://www.example.com/callback/'

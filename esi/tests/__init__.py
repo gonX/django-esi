@@ -80,34 +80,6 @@ def _store_as_Token(token: dict, user: object) -> object:
     return obj
 
 
-def _set_logger(logger: object, name: str) -> object:
-    """set logger for current test module
-
-    Args:
-    - logger: current logger object
-    - name: name of current module, e.g. __file__
-
-    Returns:
-    - amended logger
-    """
-    import logging
-    import os
-
-    # reconfigure logger so we get logging from tested module
-    f_format = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s'
-    )
-    f_handler = logging.FileHandler(
-        f'{os.path.splitext(name)[0]}.log',
-        'w+'
-    )
-    f_handler.setFormatter(f_format)
-    logger.level = logging.DEBUG
-    logger.addHandler(f_handler)
-    logger.propagate = False
-    return logger
-
-
 class SocketAccessError(Exception):
     """Error raised when a test script accesses the network"""
 

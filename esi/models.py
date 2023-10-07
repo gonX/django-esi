@@ -26,6 +26,7 @@ from .errors import (
     NotRefreshableTokenError,
     TokenExpiredError,
     TokenInvalidError,
+    TokenError
 )
 
 
@@ -115,9 +116,11 @@ class Token(models.Model):
     objects = TokenManager()
 
     def __str__(self):
-        return "{} - {}".format(
-            self.character_name, ", ".join(sorted(s.name for s in self.scopes.all()))
-        )
+        try:
+            scopes = sorted(s.name for s in self.scopes.all())
+        except ValueError:
+            scopes = []
+        return f'{self.character_name} - {", ".join(scopes)}'
 
     def __repr__(self):
         return "<{}(id={}): {}, {}>".format(
@@ -236,6 +239,16 @@ class Token(models.Model):
         else:
             logger.debug("Not a refreshable token.")
             raise NotRefreshableTokenError()
+
+    def refresh_or_delete(self):
+        """Refresh this token or delete it if it can not be refreshed."""
+        try:
+            self.refresh()
+        except TokenError:
+            self.delete()
+            logger.warning("%s: Refresh failed. Token deleted.", repr(self))
+        else:
+            logging.info("%s: Successfully refreshed", self)
 
     def get_esi_client(self, **kwargs) -> SwaggerClient:
         """Creates an authenticated ESI client with this token.
