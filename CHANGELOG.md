@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.1.0] - 2023-10-25
+
+## Changed
+
+- Brotli python lib as a dependency, Raised minimum Requests version
+  - Allows Python Requests to handle brotli compressed HTTP if CCP accidentally serve this up to clients again #32
+  - Could result in faster requests and less bandwidth usage depending on your environment, but ESI endpoint support varies greatly.
+
 ## [5.0.0] - 2023-10-08
 
 ## Added
