@@ -13,7 +13,7 @@ before_script:
 
 pre-commit-check:
   stage: pre-commit
-  image: python:3.10-bullseye
+  image: python:3.10-bookworm
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
@@ -37,7 +37,7 @@ dependency_scanning:
 
 .test-py38:
   stage: test
-  image: python:3.8-bullseye
+  image: python:3.8-bookworm
   artifacts:
     when: always
     reports:
@@ -47,7 +47,7 @@ dependency_scanning:
 
 .test-py39:
   stage: test
-  image: python:3.9-bullseye
+  image: python:3.9-bookworm
   artifacts:
     when: always
     reports:
@@ -57,7 +57,7 @@ dependency_scanning:
 
 .test-py310:
   stage: test
-  image: python:3.10-bullseye
+  image: python:3.10-bookworm
   artifacts:
     when: always
     reports:
@@ -67,7 +67,17 @@ dependency_scanning:
 
 .test-py311:
   stage: test
-  image: python:3.11-bullseye
+  image: python:3.11-bookworm
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+.test-py312:
+  stage: test
+  image: python:3.12-bookworm
   artifacts:
     when: always
     reports:
@@ -161,9 +171,14 @@ test-311-django42:
   script:
   - tox -e py311-django42
 
+test-312-django42:
+  extends: .test-py312
+  script:
+  - tox -e py312-django42
+
 deploy-pypi:
   stage: deploy
-  image: python:3.10-bullseye
+  image: python:3.10-bookworm
 
   before_script:
     - pip install build wheel twine
