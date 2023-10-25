@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-18 17:38+1000\n"
+"POT-Creation-Date: 2023-10-08 23:42+1000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,14 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: esi/models.py:72
+msgid "Character"
+msgstr ""
+
+#: esi/models.py:73
+msgid "Corporation"
+msgstr ""
 
 #: esi/templates/esi/select_token.html:13
 msgid "ESI Token Selection"
@@ -35,6 +43,12 @@ msgstr ""
 msgid "New Character"
 msgstr ""
 
+#: esi/templates/esi/select_token.html:71
+#: esi/templates/esi/select_token.html:107
+msgid "Add Token"
+msgstr ""
+
+#: esi/templates/esi/select_token.html:88
 #: esi/templates/esi/select_token.html:89
 msgid "Select"
 msgstr ""

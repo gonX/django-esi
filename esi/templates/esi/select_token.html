@@ -68,7 +68,7 @@
                                         <input type="hidden" name="_add" value="True">
                                         <a href="#" type="submit" class="m-1">
                                             <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Small_Black.png'%}"
-                                                alt="Add Token">
+                                                alt="{% trans "Add Token" %}">
                                         </a>
                                 </div>
                             </div>
@@ -85,7 +85,7 @@
                                 </div>
                                 <div class="card-footer">
                                         <input type="hidden" name="_token" value="{{ token.pk }}">
-                                        <button class="btn btn-success w-100" type="submit" title="Select" formmethod="post">
+                                        <button class="btn btn-success w-100" type="submit" title="{% trans "Select" %}" formmethod="post">
                                             {% trans "Select" %}
                                         </button>
                                 </div>
@@ -104,7 +104,7 @@
                                     <input type="hidden" name="_add" value="True">
                                     <a href="#" type="submit" class="m-1">
                                         <input type="image" name="go" src="{% static 'esi\img\EVE_SSO_Login_Buttons_Small_Black.png'%}"
-                                            alt="Add Token">
+                                            alt="{% trans "Add Token" %}">
                                     </a>
                             </div>
                         </div>
