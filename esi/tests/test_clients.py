@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from unittest.mock import patch, Mock
 import json
@@ -12,7 +12,6 @@ import requests_mock
 import django
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.utils import timezone
 
 from . import _generate_token, _store_as_Token, NoSocketsTestCase
 from .factories import create_http_error
